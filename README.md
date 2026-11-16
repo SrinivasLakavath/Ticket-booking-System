@@ -1,6 +1,8 @@
-# Movie Ticket Booking Backend System 
+# Movie Ticket Booking Backend System
 
 Milo is a **scalable, distributed, and secure movie ticket booking backend** designed using **Spring Boot**, with a microservices-inspired structure for key infrastructure components like caching, messaging, and load balancing.
+
+> Ready for local runs via Docker Compose (`docker compose up --build`).
 
 It handles everything from user authentication to reservation management, payment linking, and seat allocation with strong guarantees on **consistency, performance, and maintainability**.
 

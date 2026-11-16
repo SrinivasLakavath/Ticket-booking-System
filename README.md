@@ -1,235 +1,1058 @@
-# Movie Ticket Booking Backend System
+# 🎬 Movie Booking Application
 
-Milo is a **scalable, distributed, and secure movie ticket booking backend** designed using **Spring Boot**, with a microservices-inspired structure for key infrastructure components like caching, messaging, and load balancing.
+A comprehensive full-stack movie booking platform built with the MERN stack, featuring real-time seat locking, role-based access control, and extensive security measures. Browse movies, book shows, manage theatres, and explore analytics with pre-seeded production-like data.
 
-> Ready for local runs via Docker Compose (`docker compose up --build`).
+## ✨ Key Features
 
-It handles everything from user authentication to reservation management, payment linking, and seat allocation with strong guarantees on **consistency, performance, and maintainability**.
+### For Users 👥
+- **Movie Discovery**: Browse 20+ movies with detailed information, cast, crew, ratings, and reviews
+- **Smart Search**: Filter movies by genre, language, and rating
+- **Theatre Selection**: View 21+ theatres across 5 major cities with real-time show schedules
+- **Seat Booking**: Interactive seat selection with real-time availability via WebSocket
+- **User Reviews**: Rate and review movies and theatres (1-5 stars)
+- **Booking History**: Track all your past and upcoming bookings
+- **Profile Management**: Update personal information and preferences
 
-![Untitled design (1)](https://github.com/user-attachments/assets/94e0d5c7-e50b-44ea-b18c-d0d328456f41)
+### For Admins 🔑
+- **Movie Management**: Add, edit, and remove movies with complete metadata
+- **Theatre Administration**: Manage theatres, halls, and screening schedules
+- **Show Scheduling**: Create and manage show timings with intelligent conflict detection
+- **User Management**: View and manage user accounts
+- **Analytics Dashboard**: Access booking statistics and trends (13,195 historical bookings)
+- **Review Moderation**: Monitor and manage user and critic reviews
+- **Data Seeding**: Pre-populate database with production-like test data
 
----
+### Security & Performance 🔒
+- **JWT Authentication**: Secure token-based authentication with 7-day expiration
+- **Role-Based Access Control (RBAC)**: Separate permissions for admin and user roles
+- **Password Security**: Bcrypt hashing with salt rounds
+- **Security Headers**: Helmet.js protection against common vulnerabilities
+- **Rate Limiting**: Protection against brute-force and DDoS attacks
+- **Input Sanitization**: MongoDB injection and XSS protection
+- **CORS Configuration**: Controlled cross-origin resource sharing
+- **Real-time Updates**: Socket.IO for live seat availability
+- **Data Compression**: Gzip compression for optimized performance
 
-## ⚙️ Tech Stack
+## 🏗️ Tech Stack
 
-- **Spring Boot**: Core web framework with REST API architecture  
-- **PostgreSQL**: Relational database for consistent storage of all entities  
-- **JWT (JSON Web Tokens)**: Authentication and role-based access control  
-- **Redis**: High-performance in-memory caching for read-heavy operations  
-- **RabbitMQ**: Asynchronous messaging layer for offloading non-critical operations  
-- **Docker**: Containerization of all services for isolated, portable deployment  
-- **Go (Golang)**: Custom reverse proxy/load balancer handling traffic across instances  
-- **Docker Compose**: Multi-container orchestration for local and deployment setups
+### Backend
+- **Runtime**: Node.js v22
+- **Framework**: Express.js
+- **Database**: MongoDB v7 with Mongoose ODM
+- **Authentication**: JWT (JSON Web Tokens)
+- **Security**: Helmet, bcrypt, express-rate-limit, mongo-sanitize, xss-clean, hpp
+- **Real-time**: Socket.IO for live seat updates
+- **Validation**: Zod schemas
+- **Logging**: Custom Winston-based logger
 
----
+### Frontend
+- **Framework**: React 18
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS + DaisyUI
+- **State Management**: Redux Toolkit
+- **Data Fetching**: TanStack React Query (React Query v5)
+- **Routing**: React Router v6
+- **Real-time**: Socket.IO Client
+- **Security**: DOMPurify for XSS protection, crypto-js for encryption
 
-## 🔐 Authentication & Authorization
+### DevOps
+- **Containerization**: Docker & Docker Compose
+- **Development**: Hot-reloading with Nodemon & Vite HMR
+- **Package Manager**: pnpm (preferred) or npm
 
-Authentication is implemented using **JWT tokens**, issued upon successful login. Role-based access is enforced throughout the system:
+## 📁 Project Structure
 
-- **Admin Role**:  
-  - Manage movies, theaters, screens, showtimes  
-  - Access administrative endpoints  
+```
+MovieBookingApp/
+├── Backend/                    # Node.js Express API
+│   ├── controllers/           # Request handlers
+│   ├── models/                # MongoDB schemas
+│   ├── routes/                # API endpoints
+│   │   ├── auth.routes.js    # Authentication routes
+│   │   ├── public.routes.js  # Public movie/theatre routes
+│   │   ├── booking.routes.js # Booking management
+│   │   └── admin.routes.js   # Admin-only routes
+│   ├── services/              # Business logic layer
+│   ├── middlewares/           # Auth, error handling, sanitization
+│   ├── config/                # Security & CORS configuration
+│   ├── seeds/                 # Database seeding scripts ⭐
+│   ├── utils/                 # Logger, hash, socket utilities
+│   └── lib/validators/        # Zod validation schemas
+│
+├── Frontend/                   # React Vite Application
+│   ├── src/
+│   │   ├── components/        # Reusable UI components
+│   │   ├── pages/             # Page-level components
+│   │   ├── hooks/             # Custom React hooks
+│   │   ├── store/             # Redux store & slices
+│   │   ├── contexts/          # React contexts (Socket, etc.)
+│   │   ├── api/               # API client configuration
+│   │   └── utils/             # Helper functions
+│   └── public/                # Static assets
+│
+├── docker-compose.yml          # Multi-container orchestration
+├── DOCKER_SETUP.md            # Docker documentation
+├── QUICKSTART.md              # Quick start guide
+└── README.md                  # This file
+```
 
-- **User Role**:  
-  - View movies, book tickets, check reservation status  
-  - Submit reviews and make payments  
+## 🚀 Getting Started
 
-Tokens are stateless, and security is enforced through `@PreAuthorize` annotations and custom filters that validate JWTs on every secured route.
-
----
-
-## 🧱 Core Modules
-
-### 1. **User & Authentication Module**
-- Handles user registration, login, and JWT issuance
-- Distinguishes between admins and normal users using a boolean `is_admin` flag
-- Stores hashed passwords securely
-
----
-
-### 2. **Movie & Theater Management**
-- **Admins** can:
-  - Create and manage movie entries
-  - Add theaters, screens, and configure seating arrangements
-  - Set showtimes, assign movies to screens and time slots
-
-- **Entities involved**:
-  - `Movie`, `Theater`, `Screen`, `Seat`, `Showtime`
-
----
-
-### 3. **Reservation & Booking Logic**
-- Users can:
-  - View available showtimes
-  - Select seats
-  - Make a reservation, which links user, showtime, and selected seats
-
-- Seat booking is atomic and safe from race conditions using synchronized logic and database constraints
-
-- **Entities involved**:
-  - `Reservation`, `ReservedSeat`, `Payment`
-
----
-
-### 4.  **Atomic Seat Locking with Lua & Redis**
-
-To ensure **consistency and prevent race conditions** during seat booking in high-concurrency scenarios, the system uses **Lua scripts in Redis** to atomically manage:
-
-- **Seat availability checks**
-- **Seat locking for reservations**
-- **Seat unlocking on timeout or failure**
-
-Redis executes Lua scripts **atomically**, meaning no other operations can interleave during execution. This guarantees:
-- No **double-booking** of the same seat
-- No inconsistent intermediate states
-- Ultra-fast performance under concurrent access
-
-#### Workflow:
-1. When a user selects seats, a Lua script checks if the seats are available and locks them temporarily.
-2. If the payment is not completed within a specific window, another Lua script unlocks the seats for others to book.
-3. Once the payment is confirmed via the RabbitMQ consumer, the reservation is finalized and the lock is cleared.
-
-This mechanism acts like a **lightweight distributed lock**, enabling **safe parallel booking** without database contention or the need for heavyweight locking strategies.
-
----
-
-
-### 5. **Caching with Redis**
-- Frequently queried data like:
-  - Movie lists
-  - Showtimes per movie
-  - Seat layout per screen
-
-...are cached using Redis for **low-latency access**.
-
-- Cache is refreshed on updates using Spring's `@CacheEvict` and `@CachePut`
-
-- This greatly reduces PostgreSQL query load and improves responsiveness under high traffic
+You can run this project in **two ways**: using Docker (recommended) or traditional npm/pnpm setup.
 
 ---
 
-### 6. **RabbitMQ for Asynchronous Payment Processing**
-- **RabbitMQ** is integrated to **handle payment processing asynchronously**, ensuring that the main reservation flow is fast and non-blocking.
+### 🐳 Method 1: Docker Setup (Recommended)
+
+**Perfect for**: Quick setup, consistent environment, production-like deployment
+
+#### Prerequisites
+- Docker Desktop installed and running
+- Docker Compose (included with Docker Desktop)
+
+#### Steps
+
+1. **Clone the repository**
+   ```powershell
+   git clone <repository-url>
+   cd MovieBookingApp
+   ```
+
+2. **Start all services with one command**
+   ```powershell
+   docker compose up -d
+   ```
+
+   This command will:
+   - ✅ Pull MongoDB 7 image
+   - ✅ Build backend and frontend containers
+   - ✅ Start all three services (MongoDB, Backend, Frontend)
+   - ✅ Automatically seed the database with 18,438 test records (first run only)
+
+3. **Access the application**
+   - **Frontend**: http://localhost:5173
+   - **Backend API**: http://localhost:8000
+   - **MongoDB**: mongodb://localhost:27017
+
+4. **Useful Docker Commands**
+   ```powershell
+   # View running containers
+   docker ps
+
+   # View logs (all services)
+   docker compose logs -f
+
+   # View backend logs only
+   docker logs moviebooking-backend -f
+
+   # Stop all services
+   docker compose down
+
+   # Stop and remove all data (fresh start)
+   docker compose down -v
+
+   # Rebuild after code changes
+   docker compose build
+   docker compose up -d
+
+   # Manually re-seed database
+   docker exec moviebooking-backend pnpm run seed
+   ```
+
+**Note**: The Docker setup includes hot-reloading for both frontend and backend. Code changes are automatically reflected without rebuilding!
+
+---
+
+### 💻 Method 2: Traditional npm/pnpm Setup
+
+**Perfect for**: Development without Docker, manual control, learning the stack
+
+#### Prerequisites
+- Node.js v16+ (v22 recommended)
+- MongoDB v5+ installed and running locally
+- npm or pnpm package manager
+
+#### Steps
+
+1. **Clone the repository**
+   ```powershell
+   git clone <repository-url>
+   cd MovieBookingApp
+   ```
+
+2. **Start MongoDB** (if not already running)
+   ```powershell
+   # If MongoDB is installed as a service
+   net start MongoDB
+
+   # Or start manually
+   mongod --dbpath "C:\data\db"
+   ```
+
+3. **Setup Backend**
+   ```powershell
+   cd Backend
+
+   # Install dependencies (choose one)
+   npm install
+   # OR
+   pnpm install
+
+   # Create .env file
+   New-Item -Path .env -ItemType File
+   ```
+
+   Add the following to `Backend/.env`:
+   ```env
+   PORT=8000
+   NODE_ENV=development
+   MONGODB_URI=mongodb://localhost:27017/movie-booking-app
+   JWT_SECRET=your-super-secret-jwt-key-change-this-in-production-min-32-chars
+   JWT_EXPIRATION=7d
+   CLIENT_URL=http://localhost:5173
+   ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+   ```
+
+4. **Seed the Database** (Required for first-time setup)
+   ```powershell
+   # Still in Backend directory
+   npm run seed
+   # OR
+   pnpm run seed
+   ```
+
+   This populates the database with:
+   - 21 theatres across 5 cities
+   - 103 theatre halls
+   - 20 movies with cast and crew
+   - 15 test user accounts
+   - 679 reviews (theatre, movie, critic)
+   - 3,885 show schedules
+   - 13,195 historical bookings
+
+5. **Start Backend Server**
+   ```powershell
+   # Development mode (with auto-reload)
+   npm run dev
+   # OR
+   pnpm run dev
+
+   # Production mode
+   npm start
+   # OR
+   pnpm start
+   ```
+
+   Backend should now be running on http://localhost:8000
+
+6. **Setup Frontend** (in a new terminal)
+   ```powershell
+   cd Frontend
+
+   # Install dependencies (choose one)
+   npm install
+   # OR
+   pnpm install
+
+   # Create .env file
+   New-Item -Path .env -ItemType File
+   ```
+
+   Add the following to `Frontend/.env`:
+   ```env
+   VITE_API_URL=http://localhost:8000
+   ```
+
+7. **Start Frontend Server**
+   ```powershell
+   # Development mode (with HMR)
+   npm run dev
+   # OR
+   pnpm run dev
+   ```
+
+   Frontend should now be running on http://localhost:5173
+
+8. **Verify Setup**
+   ```powershell
+   # Test backend API
+   curl http://localhost:8000/api/movies
+
+   # Or use PowerShell
+   Invoke-RestMethod -Uri http://localhost:8000/api/movies
+   ```
+
+#### Running Backend and Frontend Simultaneously
+
+**Option 1**: Use two terminal windows
+- Terminal 1: `cd Backend && npm run dev`
+- Terminal 2: `cd Frontend && npm run dev`
+
+**Option 2**: Use background processes (PowerShell)
+```powershell
+# Start backend in background
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd Backend; npm run dev"
+
+# Start frontend in background
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd Frontend; npm run dev"
+```
+
+---
+
+## 📊 Pre-Seeded Test Data
+
+Both setup methods include automatic database seeding with production-like data:
+
+| Data Type | Count | Description |
+|-----------|-------|-------------|
+| 🎭 Theatres | 21 | Major chains across 5 cities |
+| 🏢 Theatre Halls | 103 | Standard, IMAX, 4DX halls |
+| 🎬 Movies | 20 | Popular movies with metadata |
+| 👥 Cast & Crew | 245 | Actors, Directors, Producers |
+| 🎭 Role Mappings | 275 | Cast/crew assignments |
+| 👤 Users | 15 | Admin and test users |
+| ⭐ Theatre Reviews | 273 | User ratings & comments |
+| ⭐ Movie Reviews | 260 | User ratings & comments |
+| ⭐ Critic Reviews | 146 | Professional ratings |
+| 🎟️ Show Schedules | 3,885 | 7-day schedules |
+| 🎫 Bookings | 13,195 | 6 months historical data |
+
+**Total: 18,438 records** ready for immediate testing!
+
+## 🔐 User Accounts & Authentication
+
+### Test User Credentials
+
+All pre-seeded users have the password: **`Password123!`**
+
+#### 👑 Admin Accounts
+```
+Email: admin@moviebooking.com
+Email: superadmin@moviebooking.com
+Role: admin
+```
+
+**Admin Capabilities**:
+- Full access to all admin routes
+- Create, update, delete movies
+- Manage theatres and halls
+- Create and modify show schedules
+- View all bookings and analytics
+- User management capabilities
+
+#### 👤 Regular User Accounts
+```
+Email: demo@example.com
+Email: test@example.com
+Email: john.doe@example.com
+Email: jane.smith@example.com
+Email: sarah.johnson@example.com
+Email: mike.wilson@example.com
+... (and 9 more users)
+Role: user
+```
+
+**User Capabilities**:
+- Browse movies and theatres
+- View show schedules
+- Book movie tickets
+- View and manage personal bookings
+- Submit movie and theatre reviews
+- Update profile information
+
+### User Registration
+
+New users can register via:
+- **API**: `POST /auth/sign-up`
+- **Frontend**: Registration page at `/signup`
+
+**Required Fields**:
+- First Name (minimum 2 characters)
+- Last Name (optional)
+- Email (valid email format, unique)
+- Password (minimum 8 characters, includes uppercase, lowercase, number, special character)
+
+**Default Role**: All new registrations are assigned the `user` role by default. Admin roles must be manually assigned in the database.
+
+### Authentication Flow
+
+1. **Login**: `POST /auth/sign-in` with email and password
+2. **Receive JWT**: Valid for 7 days
+3. **Include Token**: Add to `Authorization: Bearer <token>` header for protected routes
+4. **Auto-Refresh**: Frontend automatically includes token in all authenticated requests
+
+### Password Security
+
+- **Hashing Algorithm**: bcrypt with salt rounds
+- **Storage**: Only hashed passwords stored in database
+- **Validation**: Enforced strong password requirements
+- **Migration**: Includes password migration script for legacy data
+
+## � Security Features
+
+This application implements comprehensive security measures following industry best practices:
+
+### 🛡️ Backend Security
+
+#### 1. **Authentication & Authorization**
+- **JWT Tokens**: Stateless authentication with configurable expiration (default: 7 days)
+- **Role-Based Access Control (RBAC)**: Two-tier role system (admin/user)
+- **Middleware Protection**: Route-level authentication and authorization
+- **Token Validation**: Automatic token verification on protected routes
+
+#### 2. **Password Security**
+- **Bcrypt Hashing**: Industry-standard password hashing with salt rounds
+- **No Plain Text Storage**: Passwords never stored in readable format
+- **Secure Password Policy**: Enforced complexity requirements
+- **Migration Support**: Password hash migration script included
+
+#### 3. **Input Validation & Sanitization**
+- **Zod Schemas**: Type-safe validation for all API inputs
+- **MongoDB Injection Prevention**: `express-mongo-sanitize` middleware
+- **XSS Protection**: `xss-clean` middleware strips malicious scripts
+- **HPP Protection**: `hpp` prevents HTTP parameter pollution attacks
+- **DOMPurify**: Client-side sanitization of user-generated content
+
+#### 4. **HTTP Security Headers** (via Helmet.js)
+- **Content Security Policy (CSP)**: Prevents XSS and code injection
+- **X-Frame-Options**: Clickjacking protection
+- **X-Content-Type-Options**: MIME-sniffing prevention
+- **Strict-Transport-Security**: Forces HTTPS connections
+- **X-XSS-Protection**: Legacy XSS filter support
+
+#### 5. **Rate Limiting**
+```javascript
+General API Endpoints:    100 requests / 15 minutes / IP
+Authentication Endpoints:   5 requests / 15 minutes / IP
+Booking Endpoints:         50 requests / 15 minutes / IP
+```
+- **DDoS Protection**: Prevents overwhelming the server
+- **Brute Force Prevention**: Limits authentication attempts
+- **Per-IP Tracking**: Individual rate limits per client
+
+#### 6. **CORS Configuration**
+- **Allowed Origins**: Whitelist of permitted frontend domains
+- **Credentials Support**: Secure cookie and authentication handling
+- **Method Restrictions**: Only allowed HTTP methods accepted
+- **Environment-Based**: Different settings for dev/production
+
+#### 7. **Database Security**
+- **Connection String Encryption**: Sensitive credentials in environment variables
+- **Mongoose Schema Validation**: Database-level data integrity
+- **Index Optimization**: Prevents enumeration attacks
+- **No Sensitive Data Exposure**: Passwords excluded from API responses
+
+#### 8. **Real-Time Security** (Socket.IO)
+- **Origin Validation**: Restricted to allowed domains
+- **Message Size Limits**: Maximum 1MB buffer size
+- **Event Validation**: ShowID format verification (MongoDB ObjectId)
+- **Connection Logging**: Tracks all socket connections
+- **Error Handling**: Secure error messages without info leakage
+
+### 🔐 Frontend Security
+
+#### 1. **Client-Side Protection**
+- **DOMPurify Integration**: Sanitizes all user-generated HTML content
+- **Crypto-JS Encryption**: Encrypts sensitive data before storage
+- **No Sensitive Storage**: JWT tokens stored securely, no plain passwords
+
+#### 2. **API Communication**
+- **HTTPS Enforcement**: Production builds require secure connections
+- **Token Management**: Automatic token inclusion in requests
+- **Error Handling**: Sanitized error messages to users
+
+#### 3. **Input Validation**
+- **Form Validation**: Client-side validation before API calls
+- **Type Safety**: React prop types and TypeScript support (partial)
+- **XSS Prevention**: All dynamic content sanitized before render
+
+### 🔧 Security Configuration Files
+
+- **`Backend/config/security.config.js`**: Centralized security middleware
+- **`Backend/middlewares/auth.middleware.js`**: Authentication logic
+- **`Backend/middlewares/sanitize.middleware.js`**: Input sanitization
+- **`Backend/config/cors.config.js`**: CORS settings
+
+### 🚨 Security Best Practices Implemented
+
+✅ Never store passwords in plain text  
+✅ Use environment variables for secrets  
+✅ Validate all user inputs  
+✅ Sanitize data before database operations  
+✅ Implement proper error handling without exposing internals  
+✅ Use HTTPS in production  
+✅ Keep dependencies updated (npm audit)  
+✅ Implement logging for security events  
+✅ Use prepared statements (Mongoose queries)  
+✅ Implement graceful shutdown handling  
+
+### 🔍 Security Audit Commands
+
+```powershell
+# Backend security audit
+cd Backend
+npm run security:audit        # Check for vulnerabilities
+npm run security:audit:fix    # Auto-fix known issues
+npm run security:check        # Check for outdated packages
+
+# Frontend security audit
+cd Frontend
+npm run security:audit
+npm run security:audit:fix
+npm run security:check
+```
+
+### 🛠️ Environment Variables Security
+
+**Never commit `.env` files to version control!**
+
+Required environment variables are documented but values must be set securely:
+
+**Backend (`Backend/.env`)**:
+```env
+JWT_SECRET=<minimum-32-character-random-string>
+MONGODB_URI=<database-connection-string>
+PORT=8000
+NODE_ENV=production
+CLIENT_URL=<frontend-url>
+ALLOWED_ORIGINS=<comma-separated-origins>
+```
+
+**Frontend (`Frontend/.env`)**:
+```env
+VITE_API_URL=<backend-api-url>
+```
+
+**Generate Secure Keys**:
+```powershell
+# Generate JWT secret (Node.js)
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+# Or use frontend script
+cd Frontend
+npm run security:generate-key
+```
+
+## 📊 API Endpoints
+
+### Public Routes (No Authentication Required)
+
+#### Movies
+- `GET /api/movies` - List all movies with pagination
+- `GET /api/movies/:id` - Get movie details by ID
+- `GET /api/movies/:movieId/cast` - Get movie cast members
+- `GET /api/movies/:movieId/crew` - Get movie crew members
+- `GET /api/movies/:movieId/roles` - Get all cast and crew
+- `GET /api/movies/:movieId/reviews` - Get user reviews for movie
+- `GET /api/movies/:movieId/critic-reviews` - Get critic reviews
+
+#### Theatres
+- `GET /api/theatres` - List all theatres
+- `GET /api/theatres/:id` - Get theatre details
+- `GET /api/:city/theatres` - Get theatres by city
+- `GET /api/theatres/:theatreId/reviews` - Get theatre reviews
+- `GET /api/theatres/:theatreId/halls` - Get theatre halls
+
+#### Shows
+- `GET /api/:city/shows/:movieId` - Get shows by city and movie
+- `GET /api/shows/:showId` - Get show details
+- `GET /api/shows/:showId/seats` - Get seat availability
+
+#### Persons
+- `GET /api/persons/:id` - Get actor/director/crew details
+
+### Authentication Routes
+
+- `POST /auth/sign-up` - Register new user account
+  - Body: `{ firstname, lastname, email, password, role }`
+- `POST /auth/sign-in` - User login
+  - Body: `{ email, password }`
+  - Returns: JWT token
+- `GET /auth/me` - Get current user profile (requires auth)
+- `PUT /auth/update-profile` - Update user profile (requires auth)
+  - Body: `{ firstname, lastname, email }`
+
+### User Routes (Authentication Required)
+
+#### Bookings
+- `POST /booking/book` - Create new booking
+  - Body: `{ showId, seatNumbers, totalPrice }`
+- `GET /booking/my-bookings` - Get user's booking history
+- `GET /booking/:bookingId` - Get booking details
+- `DELETE /booking/:bookingId` - Cancel booking
+
+#### Reviews
+- `POST /api/movie-reviews` - Submit movie review (authenticated)
+  - Body: `{ movieId, rating, comment }`
+- `POST /api/theatre-reviews` - Submit theatre review (authenticated)
+  - Body: `{ theatreId, rating, comment }`
+
+### Admin Routes (Admin Role Required)
+
+#### Movie Management
+- `POST /admin/movies` - Add new movie
+- `PUT /admin/movies/:id` - Update movie details
+- `DELETE /admin/movies/:id` - Delete movie
+
+#### Theatre Management
+- `POST /admin/theatres` - Add new theatre
+- `PUT /admin/theatres/:id` - Update theatre
+- `DELETE /admin/theatres/:id` - Delete theatre
+- `POST /admin/theatres/:id/halls` - Add hall to theatre
+
+#### Show Management
+- `POST /admin/shows` - Create show schedule
+- `PUT /admin/shows/:id` - Update show
+- `DELETE /admin/shows/:id` - Delete show
+
+#### Analytics (Admin)
+- `GET /admin/analytics/bookings` - Booking statistics
+- `GET /admin/analytics/revenue` - Revenue reports
+- `GET /admin/analytics/popular-movies` - Most booked movies
+
+### API Request Examples
+
+#### Get All Movies
+```powershell
+curl http://localhost:8000/api/movies
+
+# PowerShell
+Invoke-RestMethod -Uri http://localhost:8000/api/movies
+```
+
+#### User Login
+```powershell
+curl -X POST http://localhost:8000/auth/sign-in `
+  -H "Content-Type: application/json" `
+  -d '{"email":"demo@example.com","password":"Password123!"}'
+```
+
+#### Create Booking (with authentication)
+```powershell
+$token = "your-jwt-token-here"
+curl -X POST http://localhost:8000/booking/book `
+  -H "Authorization: Bearer $token" `
+  -H "Content-Type: application/json" `
+  -d '{"showId":"123","seatNumbers":[1,2,3],"totalPrice":750}'
+```
+
+### Response Format
+
+All API responses follow a consistent format:
+
+**Success Response**:
+```json
+{
+  "success": true,
+  "data": { ... },
+  "message": "Operation successful"
+}
+```
+
+**Error Response**:
+```json
+{
+  "success": false,
+  "error": "Error message",
+  "statusCode": 400
+}
+```
+
+### Rate Limiting Headers
+
+Responses include rate limit information:
+```
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1635789600
+```
+
+## 🗃️ Database Models
+
+### User Management
+- **User** (`user`): User accounts with authentication
+  - Fields: firstname, lastname, email, password (hashed), role (admin/user)
+  - Indexes: email (unique)
+  - Validation: Email format, password complexity
+
+### Movie & Theatre Content
+- **Movie** (`movies`): Movie information with metadata
+  - Fields: title, genre, language, duration, rating, release_date, description
+  - Relationships: Has many reviews, cast, crew
   
-- When a user confirms a booking:
-  - The reservation is saved instantly.
-  - A **payment task is pushed to a RabbitMQ queue** for background processing.
-  - A listener consumes the task and handles payment-related logic like:
-    - Simulating payment validation
-    - Storing payment confirmation
-    - Linking payment records to reservations
+- **Theatre** (`theatre`): Theatre locations and details
+  - Fields: name, location, city, rating, facilities
+  - Relationships: Has many halls, reviews
+
+- **TheatreHall** (`theatrehall`): Individual screening rooms
+  - Fields: name, theatre_id, capacity, screen_type (Standard/IMAX/4DX)
+  - Relationships: Belongs to theatre, has many shows
+
+### Cast & Crew
+- **Person** (`person`): Actors, directors, producers, crew
+  - Fields: name, role, bio, image_url
   
-- This decouples the **payment system** from the main app logic, allowing:
-  - **Faster response times** for users
-  - **Scalability** of payment workers
-  - Future integration with **real payment gateways** without touching core booking logic
+- **MovieRoleMapping** (`movierolemapping`): Cast/crew assignments
+  - Fields: movie_id, person_id, role_type, character_name
+  - Relationships: Links movies and persons
 
-- We can easily extend this queue-based system to support:
-  - Retries on payment failure
-  - Dead-letter queues for failed transactions
-  - Email/SMS confirmation hooks
+### Reviews & Ratings
+- **MovieReview** (`moviereview`): User reviews for movies
+  - Fields: user_id, movie_id, rating (1-5), comment
+  - Validation: Rating range, unique user-movie combination
+
+- **TheatreReview** (`theatrereview`): User reviews for theatres
+  - Fields: user_id, theatre_id, rating (1-5), comment
+  
+- **CriticReview** (`criticreview`): Professional critic ratings
+  - Fields: movie_id, critic_name, rating, review, source
+
+### Booking System
+- **TheatreHallMovieMapping** (`theatrehallmoviemapping`): Show schedules
+  - Fields: theatre_hall_id, movie_id, show_time, show_date, price, available_seats
+  - Features: Automatic overlap detection, dynamic pricing
+  
+- **Booking** (`booking`): User ticket bookings
+  - Fields: user_id, show_id, seat_numbers, total_price, booking_status
+  - States: confirmed, cancelled, pending
+
+- **SeatLock** (`seatlock`): Temporary seat reservations
+  - Fields: show_id, seat_numbers, user_id, locked_until
+  - Purpose: Prevents double-booking during checkout
+
+## 🎟️ Show Scheduling Features
+
+The application includes an intelligent show scheduling system:
+
+### Key Features
+- **Dynamic Start Times**: Theatres start at staggered times (7:30 AM - 12:30 PM)
+- **Smart Movie Selection**: Halls prioritize high-rated movies
+- **Automatic Overlap Detection**: Prevents scheduling conflicts
+- **Realistic Scheduling**: 20-minute cleanup time between shows
+- **7-Day Schedules**: Shows generated for the next week
+- **Capacity Optimization**: Larger theatres show more diverse movies
+
+### Example Schedule
+```
+PVR INOX Forum Mall - Hall 1 (Oct 26, 2025)
+├── 09:30 - 12:02 | The Dark Knight (₹260)
+├── 12:22 - 14:44 | The Shawshank Redemption (₹260)
+├── 15:04 - 17:54 | 3 Idiots (₹260)
+├── 18:14 - 20:42 | Inception (₹260)
+└── 21:02 - 23:51 | Interstellar (₹260)
+```
+
+### Pricing Strategy
+- **Standard Halls**: ₹150-200
+- **IMAX/Premium**: ₹250-350
+- **4DX/Luxury**: ₹300-500
+- **Dynamic Pricing**: Weekend and evening shows cost more
+
+## 🧪 Testing & Development
+
+### Manual Database Seeding
+
+```powershell
+# Seed all data at once
+cd Backend
+npm run seed
+
+# Seed specific data types
+node seeds/user.seed.js          # Users only
+node seeds/movie.seed.js         # Movies only
+node seeds/theatre.seed.js       # Theatres only
+node seeds/booking.seed.js       # Bookings only
+node seeds/seed-reviews.js       # Reviews only
+```
+
+### View Seeded Data
+
+```powershell
+# Check show schedules
+node seeds/view-schedules.js
+
+# Verify data integrity
+node seeds/verify-shows.js
+
+# Check for duplicates
+node seeds/check-duplicates.js
+```
+
+### Testing the API
+
+```powershell
+# Test movies endpoint
+$response = Invoke-WebRequest -Uri "http://localhost:8000/api/movies" -UseBasicParsing
+$data = ($response.Content | ConvertFrom-Json)
+Write-Host "Total movies: $($data.movies.Count)"
+
+# Test authentication
+$loginData = @{
+    email = "demo@example.com"
+    password = "Password123!"
+} | ConvertTo-Json
+
+$response = Invoke-RestMethod -Uri "http://localhost:8000/auth/sign-in" `
+    -Method Post `
+    -ContentType "application/json" `
+    -Body $loginData
+
+$token = $response.token
+Write-Host "Token: $token"
+
+# Test authenticated endpoint
+$headers = @{ Authorization = "Bearer $token" }
+$bookings = Invoke-RestMethod -Uri "http://localhost:8000/booking/my-bookings" `
+    -Headers $headers
+```
+
+## 🎯 Sample Data Overview
+
+### Cities & Theatres
+- **Bangalore** (5 theatres): PVR INOX Forum Mall, Cinépolis Royal Meenakshi, INOX Garuda, PVR Orion, Cinépolis Nexus
+- **Mumbai** (6 theatres): PVR Phoenix Palladium, INOX R-City, Cinépolis Seawoods, PVR INOX Juhu
+- **Delhi** (7 theatres): PVR Select Citywalk, PVR Priya, INOX Nehru Place, Cinépolis DLF Place
+- **Pune** (2 theatres): Cinépolis City One, INOX Jaswant Tuli
+- **Nagpur** (1 theatre): Cinépolis VR Nagpur
+
+### Movie Genres
+- Action, Drama, Sci-Fi, Comedy, Thriller, Romance, Crime, Biography
+- Languages: English, Hindi, Telugu, Tamil
+- Durations: 120-180 minutes
+- Ratings: 7.5-9.3 (IMDB-style)
+
+##  Real-Time Features (WebSocket)
+
+The application uses Socket.IO for real-time updates:
+
+### Features
+- **Live Seat Availability**: Seats update in real-time across all connected clients
+- **Seat Locking**: Temporary locks prevent double-booking during checkout
+- **Show Room Updates**: Join/leave show rooms for targeted updates
+- **Connection Management**: Automatic reconnection and error handling
+
+### Socket Events
+
+**Client  Server**:
+- `join-show`: Join a show room to receive updates
+- `leave-show`: Leave a show room
+- `lock-seats`: Temporarily lock seats during booking
+
+**Server  Client**:
+- `seats-updated`: Broadcast seat availability changes
+- `booking-confirmed`: Notify about successful bookings
+- `error`: Send error messages
+
+### Usage Example (Frontend)
+```javascript
+import { io } from 'socket.io-client'
+
+const socket = io('http://localhost:8000')
+
+// Join show room
+socket.emit('join-show', showId)
+
+// Listen for seat updates
+socket.on('seats-updated', (data) => {
+  console.log('Seats updated:', data)
+})
+
+// Leave when done
+socket.emit('leave-show', showId)
+```
+
+##  Performance Optimizations
+
+- **Database Indexing**: Optimized queries for movies, theatres, and bookings
+- **Gzip Compression**: Reduced payload sizes for faster transfers
+- **React Query Caching**: Frontend data caching and automatic refetching
+- **Pagination**: Large datasets split into manageable chunks
+- **Lazy Loading**: Components loaded on-demand
+- **CDN-Ready**: Static assets optimized for CDN delivery
+- **Connection Pooling**: MongoDB connection reuse
+
+##  Troubleshooting
+
+### Docker Issues
+
+**Problem**: Port already in use
+```powershell
+# Find process using port
+netstat -ano | findstr :5173
+
+# Kill process
+taskkill /PID <PID> /F
+```
+
+**Problem**: Database not seeding
+```powershell
+# Check logs
+docker logs moviebooking-backend
+
+# Manually trigger seeding
+docker exec moviebooking-backend pnpm run seed
+
+# Fresh start
+docker compose down -v
+docker compose up -d
+```
+
+**Problem**: Frontend not loading
+```powershell
+# Rebuild frontend
+docker compose build frontend
+docker compose up -d frontend
+```
+
+### npm/pnpm Issues
+
+**Problem**: MongoDB connection failed
+```powershell
+# Check if MongoDB is running
+Get-Service MongoDB
+
+# Start MongoDB service
+net start MongoDB
+
+# Or start manually
+mongod --dbpath "C:\data\db"
+```
+
+**Problem**: Dependencies not installing
+```powershell
+# Clear cache
+npm cache clean --force
+# or
+pnpm store prune
+
+# Delete node_modules and reinstall
+Remove-Item -Recurse -Force node_modules
+npm install
+```
+
+**Problem**: Backend crashes on startup
+```powershell
+# Check .env file exists and has correct values
+Get-Content Backend\.env
+
+# Check MongoDB URI is correct
+# Check JWT_SECRET is at least 32 characters
+```
+
+**Problem**: CORS errors
+```powershell
+# Ensure CLIENT_URL in backend .env matches frontend URL
+# Default: CLIENT_URL=http://localhost:5173
+```
+
+### Common Errors
+
+**Error**: "Authentication required"
+- Ensure JWT token is included in Authorization header
+- Token format: `Bearer <token>`
+- Check token hasn't expired (7-day default)
+
+**Error**: "Access Denied"
+- User doesn't have required role (admin vs user)
+- Try logging in with admin account
+
+**Error**: "Too many requests"
+- Rate limit exceeded
+- Wait 15 minutes or adjust rate limits in security.config.js
+
+**Error**: "Seat already booked"
+- Seat was booked by another user
+- Refresh seat availability and select different seats
+
+##  Additional Documentation
+
+- **[QUICKSTART.md](QUICKSTART.md)**: Quick start guide for Docker setup
+- **[DOCKER_SETUP.md](DOCKER_SETUP.md)**: Comprehensive Docker documentation
+- **Backend Seeds**: Check `Backend/seeds/` directory for seeding scripts
+
+##  CI/CD & Deployment
+
+### Environment-Specific Configurations
+
+**Development**:
+```env
+NODE_ENV=development
+# Verbose logging
+# Hot-reloading enabled
+# Less strict security for testing
+```
+
+**Production**:
+```env
+NODE_ENV=production
+# Minimal logging
+# Optimized builds
+# Strict security enforcement
+# HTTPS required
+```
+
+### Docker Production Build
+
+```powershell
+# Build production images
+docker compose -f docker-compose.prod.yml build
+
+# Run in production mode
+docker compose -f docker-compose.prod.yml up -d
+```
+
+### Deployment Checklist
+
+- [ ] Set `NODE_ENV=production`
+- [ ] Generate strong JWT_SECRET (32+ characters)
+- [ ] Use secure MongoDB credentials
+- [ ] Enable HTTPS/SSL certificates
+- [ ] Update CORS allowed origins
+- [ ] Configure proper rate limits
+- [ ] Set up monitoring and logging
+- [ ] Enable database backups
+- [ ] Review and test security headers
+- [ ] Update API_URL to production domain
+
+##  Contributing
+
+Contributions are welcome! Please follow these guidelines:
+
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
+3. **Commit changes**: `git commit -m 'Add amazing feature'`
+4. **Push to branch**: `git push origin feature/amazing-feature`
+5. **Open a Pull Request**
+
+### Code Style
+- Follow existing code patterns
+- Use ESLint configuration provided
+- Write meaningful commit messages
+- Add comments for complex logic
+
+### Testing
+- Test all new features thoroughly
+- Ensure no breaking changes
+- Verify both Docker and npm setups work
+
+
+##  Acknowledgments
+
+- **Theatre Data**: Inspired by major cinema chains in India (PVR, INOX, Cin�polis)
+- **Movie Data**: Popular films across various genres and languages
+- **Scheduling Algorithm**: Intelligent time slot optimization
+- **Security Best Practices**: OWASP guidelines and Node.js security recommendations
+- **UI Components**: DaisyUI and Tailwind CSS
+
+##  Support
+
+For issues, questions, or suggestions:
+- Open an issue on GitHub
+- Check existing documentation
+- Review troubleshooting section
 
 ---
 
-### 7. **Payments & Reviews**
-- Each reservation is linked to a `Payment` record
-- Users can later leave a `Review` for the movie they watched
-- Payments are simulated/logged and can be later integrated with real gateways
+**Built with  using MERN Stack**
 
----
-
-## ⏲️ Scheduled Cleanup of Expired Seat Locks
-
-To maintain **data consistency** and avoid stale seat locks blocking availability, the system includes a **scheduled cleanup task** that runs periodically as a **CRON job** within the Spring Boot application.
-
-#### Why It’s Needed:
-- Seats temporarily locked during the booking process (via Redis + Lua) may remain held if:
-  - The user abandons the payment flow
-  - There’s a failure in communication
-- These stale locks can prevent other users from booking valid seats
-
-#### How It Works:
-- A Spring `@Scheduled` job runs at fixed intervals (e.g., every 5 minutes)
-- It scans Redis for **expired or timed-out seat locks**
-- Removes any that exceed a safe timeout threshold
-- Frees up the seats for other users to book
-
-This cleanup mechanism ensures:
-- **Fresh seat availability**
-- No false positives on “unavailable” seats
-- A seamless and consistent booking experience for users
-
----
-
-## 🗃 Data Model Overview
-
-![Untitled](https://github.com/user-attachments/assets/d0a64696-d0af-4f32-839a-ae4ed9d27b53)
-
-The schema is normalized and enforces **unique constraints**, **foreign key relationships**, and **cascading deletes** wherever appropriate to maintain data integrity.
-
----
-
-##  🛠 Deployment Architecture
-
-To ensure performance, scalability, and fault tolerance, the backend is **deployed as three independent Spring Boot instances**, each stateless and running inside a Docker container.
-
-A custom **Go-based Load Balancer** is used to distribute incoming HTTP traffic across these instances:
-
-- Built using Go’s `net/http` and `httputil` reverse proxy
-- Implements **Round Robin** or **Least Connections** strategy
-- Handles failure gracefully and retries failed nodes
-
----
-
-##  🐳 Containerized Microservices
-
-Each service runs in a dedicated container:
-- `springboot-app`: 3 containers, each an instance of the backend app
-- `postgres`: central relational database
-- `redis`: caching layer
-- `rabbitmq`: message queue
-- `golang-proxy`: load balancer container
-
-Communication is done over a virtual Docker network, allowing services to reach each other by name.
-
-This setup enables:
-- **Horizontal scaling** of backend instances
-- Easy deployment on any Docker-compatible host
-- Consistent environments between dev, staging, and production
-
----
-
-## 📌 Design Decisions
-
-- **Stateless Application Instances**: Easy to scale horizontally
-- **Asynchronous Messaging with RabbitMQ**: Improves UX and throughput
-- **Caching via Redis**: Reduces DB strain and enhances performance
-- **Database-level Constraints**: Avoids duplicate or overlapping seat reservations
-- **Dockerization**: Promotes portability, reproducibility, and environment parity
-- **Go-based Load Balancer**: Lightweight, fast, and highly customizable
-
----
-
-## ✅ Current System Capabilities
-
-- Register & authenticate users with JWT
-- Manage movies, theaters, screens, showtimes (admin-only)
-- Fetch movies, book showtimes, reserve seats
-- Process and log payments
-- Add and fetch user reviews
-- Automatic cache refresh on data updates
-- Background task handling with RabbitMQ
-- Docker-based deployment with Go-powered load distribution
-
----
-
-## 🧠 Future Enhancements
-
-- Integration with real payment gateways (e.g., Stripe, Razorpay)
-- Enhanced admin dashboard with analytics
-- Support for seat map UI rendering (for frontend use)
-- Retry logic for RabbitMQ consumer failures
-- Rate limiting & abuse protection via API gateway
-- Observability with Prometheus + Grafana for metrics
-
+Happy coding! 

@@ -18,7 +18,8 @@ const BookSeatPage = () => {
   const {mutateAsync: unlockSeatsAsync} = useUnlockSeats();
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [lockTimer, setLockTimer] = useState(null);
+  const [holdSecondsLeft, setHoldSecondsLeft] = useState(null);
+  const HOLD_SECONDS = Math.floor(9.5 * 60);
   
   // Use real-time seat updates via Socket.IO
   const {
@@ -88,34 +89,46 @@ const BookSeatPage = () => {
     getSeatStatus();
   }, [getSeatStatus]);
 
+  // Visible seat-hold countdown while locks are active
+  useEffect(() => {
+    if (holdSecondsLeft === null) return undefined;
+    if (holdSecondsLeft <= 0) {
+      (async () => {
+        try {
+          await unlockSeatsAsync({ showId: hall.showId });
+        } catch (error) {
+          console.error("Error auto-unlocking seats:", error);
+        }
+        setSelectedSeats([]);
+        setHoldSecondsLeft(null);
+        alert('Your seat hold expired. Please select seats again.');
+      })();
+      return undefined;
+    }
+    const tick = setInterval(() => {
+      setHoldSecondsLeft((prev) => (prev === null ? null : prev - 1));
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [holdSecondsLeft, hall.showId, unlockSeatsAsync]);
+
+  const formatHoldTime = (totalSeconds) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   // Lock seats when selection changes
   useEffect(() => {
     const lockSeats = async () => {
       if (selectedSeats.length > 0 && hall.showId) {
         try {
           await lockSeatsAsync({ showId: hall.showId, seatNumbers: selectedSeats });
-          
-          // Set a timer to unlock seats after 9.5 minutes (before the 10-minute expiry)
-          if (lockTimer) {
-            clearTimeout(lockTimer);
-          }
-          
-          const timer = setTimeout(async () => {
-            // Auto-unlock if user hasn't proceeded to checkout
-            try {
-              await unlockSeatsAsync({ showId: hall.showId });
-              setSelectedSeats([]);
-              alert('Your seat selection has expired. Please select seats again.');
-            } catch (error) {
-              console.error("Error auto-unlocking seats:", error);
-            }
-          }, 9.5 * 60 * 1000);
-          
-          setLockTimer(timer);
+          // Reset visible hold countdown to match server lock TTL
+          setHoldSecondsLeft(HOLD_SECONDS);
         } catch (error) {
           console.error("Error locking seats:", error);
           if (error.response?.status === 409) {
-            alert(error.response.data.error || 'Some seats are no longer available. Please select different seats.');
+            alert(error.response.data.error || error.response.data.message || 'Some seats are no longer available. Please select different seats.');
             // Remove the conflicting seats from selection
             if (error.response.data.lockedSeats) {
               setSelectedSeats(prev => prev.filter(s => !error.response.data.lockedSeats.includes(s)));
@@ -130,16 +143,14 @@ const BookSeatPage = () => {
             // Network error or other issue
             alert('Unable to lock seats. Please check your connection and try again.');
             setSelectedSeats([]);
+            setHoldSecondsLeft(null);
           }
         }
       } else if (selectedSeats.length === 0 && hall.showId && !isInitialLoad.current) {
         // Unlock seats when selection is cleared
         try {
           await unlockSeatsAsync({ showId: hall.showId });
-          if (lockTimer) {
-            clearTimeout(lockTimer);
-            setLockTimer(null);
-          }
+          setHoldSecondsLeft(null);
         } catch (error) {
           console.error("Error unlocking seats:", error);
           // Don't show alert for unlock errors - it's not critical
@@ -148,13 +159,6 @@ const BookSeatPage = () => {
     };
 
     lockSeats();
-    
-    // Cleanup on unmount
-    return () => {
-      if (lockTimer) {
-        clearTimeout(lockTimer);
-      }
-    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSeats, hall.showId]);
 
@@ -243,6 +247,14 @@ const BookSeatPage = () => {
                       <div className="stat-title text-primary-content/70">Total Amount</div>
                       <div className="stat-value text-2xl text-white">₹{hall.price * selectedSeats.length}</div>
                     </div>
+                    {holdSecondsLeft !== null && (
+                      <div className="stat place-items-center">
+                        <div className="stat-title text-primary-content/70">Seat Hold</div>
+                        <div className={`stat-value text-2xl ${holdSecondsLeft <= 60 ? 'text-warning' : 'text-white'}`}>
+                          {formatHoldTime(holdSecondsLeft)}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

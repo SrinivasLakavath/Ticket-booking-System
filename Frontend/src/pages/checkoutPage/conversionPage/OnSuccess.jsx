@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useCreatreBooking, useUnlockSeats } from '../../../hooks/booking.hooks';
@@ -13,6 +13,14 @@ const OnSuccess = () => {
     const { mutateAsync: unlockSeatsAsync } = useUnlockSeats();
 
     const isBookingCreatedRef = useRef(false);
+
+    // Stable CineSeat ticket code for this confirmation view
+    const ticketCode = useMemo(() => {
+      const seed = booking.orderId || `${hall.showId || 'SHOW'}-${(booking.selectedSeats || []).join('')}`;
+      const compact = String(seed).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+      const suffix = compact.slice(-6) || 'SEAT01';
+      return `CS-${suffix}`;
+    }, [booking.orderId, booking.selectedSeats, hall.showId]);
 
   const createBooking = async () => {
     if (!isBookingCreatedRef.current) {
@@ -48,10 +56,14 @@ const OnSuccess = () => {
                   </svg>
                 </div>
               </div>
-              <h1 className="text-4xl font-bold text-success mb-2">Booking Confirmed!</h1>
-              <p className="text-base-content/70">Your tickets have been successfully booked</p>
+              <h1 className="text-4xl font-bold text-success mb-2 font-display">Booking Confirmed!</h1>
+              <p className="text-base-content/70">Your CineSeat tickets are ready — show this code at the theatre.</p>
+              <div className="mt-6 inline-flex flex-col items-center gap-2 rounded-xl border border-secondary/40 bg-base-200 px-8 py-4">
+                <span className="text-xs uppercase tracking-[0.2em] text-base-content/60">Ticket Code</span>
+                <span className="font-mono text-3xl font-bold text-secondary tracking-widest">{ticketCode}</span>
+              </div>
               <div className="mt-4">
-                <span className="text-sm text-base-content/60">Booking ID: </span>
+                <span className="text-sm text-base-content/60">Payment / Booking ID: </span>
                 <span className="font-mono font-semibold text-primary">{booking.orderId}</span>
               </div>
             </div>

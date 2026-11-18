@@ -51,6 +51,21 @@ export const useCreatreBooking = () => {
     });
   };
 
+  export const useCancelBooking = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+      mutationFn: async (bookingId) => {
+        const { data } = await apiInstance.delete(`/booking/${bookingId}`);
+        return data;
+      },
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: ["user-bookings"] });
+        await queryClient.invalidateQueries({ queryKey: ["seat-status"] });
+      },
+    });
+  };
+
   export const useLockSeats = () => {
     const queryClient = useQueryClient();
   

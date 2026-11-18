@@ -1,4 +1,4 @@
-# Frontend Dockerfile
+# CineSeat web image (React + Vite client)
 FROM node:22-alpine
 
 WORKDIR /app

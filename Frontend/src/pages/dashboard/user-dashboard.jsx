@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useLoggedInUser, useUpdateProfile } from "../../hooks/auth.hooks";
-import { useGetUserBookings } from "../../hooks/booking.hooks";
+import { useCancelBooking, useGetUserBookings } from "../../hooks/booking.hooks";
 import moment from "moment";
 import { useNavigate } from "react-router-dom";
 
 const UserDashboard = () => {
   const { data: user } = useLoggedInUser();
   const { data: bookings, isLoading: bookingsLoading } = useGetUserBookings();
+  const { mutateAsync: cancelBookingAsync, isPending: isCancelling } = useCancelBooking();
   const { mutateAsync: updateProfile, isPending: isUpdating } = useUpdateProfile();
   const navigate = useNavigate();
 
@@ -51,6 +52,23 @@ const UserDashboard = () => {
       lastname: user?.lastname || "",
     });
     setIsEditingProfile(false);
+  };
+
+  const handleCancelBooking = async (bookingId) => {
+    const confirmed = window.confirm(
+      "Cancel this CineSeat booking? The seat will be released for other viewers."
+    );
+    if (!confirmed) return;
+    try {
+      await cancelBookingAsync(bookingId);
+      alert("Booking cancelled. Your seat is free again.");
+    } catch (error) {
+      alert(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Failed to cancel booking"
+      );
+    }
   };
 
   const BookingCard = ({ booking }) => {
@@ -134,6 +152,19 @@ const UserDashboard = () => {
               <div className="text-xs text-base-content/50">
                 Booked on: {moment(booking.createdAt).format("DD MMM YYYY, hh:mm A")}
               </div>
+
+              {!isPast && (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-error btn-sm"
+                    disabled={isCancelling}
+                    onClick={() => handleCancelBooking(booking._id)}
+                  >
+                    {isCancelling ? "Cancelling..." : "Cancel Booking"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -269,6 +269,100 @@ async function getUserBookings(req, res) {
     }
 }
 
+/**
+ * Cancel a CineSeat booking owned by the current user and free the seat.
+ */
+async function cancelBooking(req, res) {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            message: 'Unauthorized',
+            data: null,
+        })
+    }
+
+    const { bookingId } = req.params
+    if (!bookingId) {
+        return res.status(400).json({
+            success: false,
+            message: 'Booking id is required',
+            data: null,
+        })
+    }
+
+    try {
+        const booking = await Booking.findById(bookingId).populate({
+            path: 'showId',
+            select: 'showDate startTimestamp',
+        })
+
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: 'Booking not found',
+                data: null,
+            })
+        }
+
+        if (booking.userId.toString() !== req.user._id.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: 'You can only cancel your own bookings',
+                data: null,
+            })
+        }
+
+        if (booking.showId?.showDate && booking.showId?.startTimestamp) {
+            const showTime = new Date(
+                `${booking.showId.showDate}T${booking.showId.startTimestamp}:00`
+            )
+            if (!Number.isNaN(showTime.getTime()) && showTime <= new Date()) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Past show bookings cannot be cancelled',
+                    data: null,
+                })
+            }
+        }
+
+        const showId = booking.showId?._id || booking.showId
+        const seatNumber = booking.seatNumber
+
+        await booking.deleteOne()
+
+        const remainingBookings = await Booking.find({ showId }).select('seatNumber')
+        const bookedSeats = remainingBookings.map((b) => b.seatNumber)
+        const activeLocks = await SeatLock.find({
+            showId,
+            expiresAt: { $gt: new Date() },
+        }).select('seatNumber userId')
+        const lockedSeats = activeLocks.map((l) => ({
+            seatNumber: l.seatNumber,
+            userId: l.userId?.toString(),
+            isLockedByCurrentUser: false,
+        }))
+
+        const io = req.app.get('io')
+        if (io && showId) {
+            emitSeatStatusUpdate(io, showId.toString(), { bookedSeats, lockedSeats })
+            emitSeatsUnlocked(io, showId.toString(), [seatNumber], req.user._id.toString())
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Booking cancelled successfully',
+            data: { bookingId, seatNumber, showId },
+        })
+    } catch (error) {
+        console.error('Error cancelling booking:', error)
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to cancel booking',
+            data: null,
+        })
+    }
+}
+
 async function lockSeats(req, res) {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     
@@ -450,6 +544,7 @@ module.exports = {
     createBooking, 
     getShowBooking, 
     getUserBookings,
+    cancelBooking,
     lockSeats,
     unlockSeats,
     getLockedAndBookedSeats

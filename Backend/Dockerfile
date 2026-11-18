@@ -1,4 +1,4 @@
-# Backend Dockerfile
+# CineSeat API image (Express + MongoDB ticket booking backend)
 FROM node:22-alpine
 
 WORKDIR /app

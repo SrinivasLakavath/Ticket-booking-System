@@ -1,77 +1,79 @@
+# CineSeat local stack — Srinivas Lakavath's ticket booking system
+# Usage: docker compose up --build
+# Seed tip: after API is healthy, run `docker compose exec cineseat-api pnpm seed`
+
 services:
-  # MongoDB Database
-  mongodb:
+  # CineSeat MongoDB
+  cineseat-mongodb:
     image: mongo:7
-    container_name: moviebooking-mongodb
+    container_name: cineseat-mongodb
     restart: unless-stopped
     ports:
       - "27017:27017"
     volumes:
-      - mongodb_data:/data/db
+      - cineseat_mongodb_data:/data/db
     environment:
-      MONGO_INITDB_DATABASE: movie-booking-app
+      MONGO_INITDB_DATABASE: cineseat
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/movie-booking-app --quiet
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/cineseat --quiet
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 40s
     networks:
-      - backend-network
+      - cineseat-backend
 
-  # Backend Service
-  backend:
+  # CineSeat Express API
+  cineseat-api:
     build:
       context: ./Backend
       dockerfile: Dockerfile
-    container_name: moviebooking-backend
+    container_name: cineseat-api
     restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
       - PORT=8000
       - NODE_ENV=development
-      - MONGODB_URI=mongodb://mongodb:27017/movie-booking-app
+      - MONGODB_URI=mongodb://cineseat-mongodb:27017/cineseat
       - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production-min-32-chars
       - JWT_EXPIRATION=7d
       - CLIENT_URL=http://localhost:5173
       - ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
     depends_on:
-      mongodb:
+      cineseat-mongodb:
         condition: service_healthy
     networks:
-      - backend-network
-      - frontend-network
+      - cineseat-backend
+      - cineseat-frontend
     volumes:
       - ./Backend:/app
       - /app/node_modules
 
-  # Frontend Service
-  frontend:
+  # CineSeat React web client
+  cineseat-web:
     build:
       context: ./Frontend
       dockerfile: Dockerfile
-    container_name: moviebooking-frontend
+    container_name: cineseat-web
     restart: unless-stopped
     ports:
       - "5173:5173"
     environment:
       - VITE_API_URL=http://localhost:8000
     depends_on:
-      - backend
+      - cineseat-api
     networks:
-      - frontend-network
+      - cineseat-frontend
     volumes:
       - ./Frontend:/app
       - /app/node_modules
 
 networks:
-  # Backend network - only backend and mongodb
-  backend-network:
+  cineseat-backend:
     driver: bridge
-  # Frontend network - frontend can access backend
-  frontend-network:
+  cineseat-frontend:
     driver: bridge
 
 volumes:
-  mongodb_data:
+  cineseat_mongodb_data:

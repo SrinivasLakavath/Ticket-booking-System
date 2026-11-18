@@ -106,8 +106,8 @@ const Navbar = () => {
         </div>
 
         {/* Logo */}
-        <a className="btn btn-ghost text-xl" onClick={toHome}>
-          CineVerse
+        <a className="btn btn-ghost text-xl font-display tracking-tight" onClick={toHome}>
+          <span className="text-secondary">Cine</span>Seat
         </a>
       </div>
 

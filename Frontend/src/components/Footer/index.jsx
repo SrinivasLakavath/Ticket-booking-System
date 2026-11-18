@@ -2,8 +2,8 @@ const Footer = () => {
   return (
     <footer className="footer sm:footer-horizontal bg-base-200 text-base-content p-14">
         <nav>
-          <h6 className="footer-title">Services</h6>
-          <a className="link link-hover">Movie Booking</a>
+          <h6 className="footer-title">CineSeat</h6>
+          <a className="link link-hover">Ticket Booking</a>
           <a className="link link-hover">Seat Selection</a>
           <a className="link link-hover">Gift Cards</a>
           <a className="link link-hover">Group Bookings</a>

@@ -36,7 +36,7 @@ const SigninPage = () => {
         <div className="text-center lg:text-left lg:ml-8">
           <h1 className="text-5xl font-bold">Welcome Back!</h1>
           <p className="py-6">
-            Sign in to CineVerse and continue your cinematic journey. Book tickets, write reviews, and explore the latest movies.
+            Sign in to CineSeat and continue your cinematic journey. Book tickets, write reviews, and explore the latest movies.
           </p>
         </div>
         <div className="card w-full max-w-sm shadow-2xl bg-base-100">

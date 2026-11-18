@@ -14,10 +14,13 @@ import "./index.css";
 
 const queryClient = new QueryClient();
 
-// Force clear old theme and set to luxury
-if (localStorage.getItem('theme') !== 'luxury') {
-  localStorage.setItem('theme', 'luxury');
-  document.documentElement.setAttribute('data-theme', 'luxury');
+// Prefer CineSeat cinema-night theme (migrate away from legacy luxury)
+const storedTheme = localStorage.getItem('theme');
+if (!storedTheme || storedTheme === 'luxury' || storedTheme === 'dark') {
+  localStorage.setItem('theme', 'cineseat');
+  document.documentElement.setAttribute('data-theme', 'cineseat');
+} else {
+  document.documentElement.setAttribute('data-theme', storedTheme);
 }
 
 createRoot(document.getElementById("root")).render(

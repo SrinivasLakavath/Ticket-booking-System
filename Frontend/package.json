@@ -1,7 +1,8 @@
 {
-  "name": "movie-booking-app-client",
+  "name": "cineseat-frontend",
   "private": true,
   "version": "0.0.0",
+  "description": "CineSeat web client — Srinivas Lakavath's cinema ticket booking UI",
   "type": "module",
   "scripts": {
     "dev": "dotenv -- vite",

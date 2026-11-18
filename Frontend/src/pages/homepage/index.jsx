@@ -36,9 +36,9 @@ const Homepage = () => {
         <div className="hero-overlay bg-opacity-60"></div>
         <div className="hero-content text-center text-neutral-content">
           <div className="max-w-md">
-            <h1 className="mb-5 text-5xl font-bold">Your Gateway to the Silver Screen</h1>
+            <h1 className="mb-5 text-5xl font-bold font-display">CineSeat</h1>
             <p className="mb-5">
-              Discover the latest blockbusters, book your seats with ease, and enjoy an unforgettable cinema experience with CineVerse.
+              Srinivas Lakavath&apos;s ticket booking system — find tonight&apos;s shows, lock your seats in real time, and walk into the theatre ready.
             </p>
             <button className="btn btn-primary" onClick={toExplorePage}>
               Explore Movies

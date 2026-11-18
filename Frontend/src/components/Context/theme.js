@@ -1,25 +1,24 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
 export const ThemeContext = createContext({
-    theme: 'luxury',
+    theme: 'cineseat',
   toggleTheme: () => {},
 });
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
-    // Get theme from localStorage or default to 'luxury'
-    return localStorage.getItem('theme') || 'luxury';
+    const saved = localStorage.getItem('theme');
+    if (!saved || saved === 'luxury' || saved === 'dark') return 'cineseat';
+    return saved;
   });
 
   useEffect(() => {
-    // Apply theme to HTML element
     document.documentElement.setAttribute('data-theme', theme);
-    // Save to localStorage
     localStorage.setItem('theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme((prevTheme) => prevTheme === 'luxury' ? 'dark' : 'luxury');
+    setTheme((prevTheme) => (prevTheme === 'cineseat' ? 'light' : 'cineseat'));
   };
 
   return (

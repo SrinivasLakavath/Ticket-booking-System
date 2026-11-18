@@ -51,18 +51,29 @@ app.use('/api', generalLimiter)
 // Authentication middleware
 app.use(authenticationMiddleware)
 
-// Health check endpoint (no rate limiting)
-app.get('/', (req, res) =>
-  res.json({ status: 'success', message: 'Server is up and running' })
-)
+// Health / identity endpoints (no rate limiting)
+const packageJson = require('../package.json')
 
-app.get('/health', (req, res) =>
-  res.json({ 
-    status: 'success', 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  })
-)
+function buildInfoPayload() {
+  return {
+    success: true,
+    message: 'CineSeat API is running',
+    data: {
+      brand: 'CineSeat',
+      product: "Srinivas Lakavath's ticket booking system",
+      version: packageJson.version || '1.0.0',
+      environment: process.env.NODE_ENV || 'development',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+    },
+  }
+}
+
+app.get('/', (req, res) => res.json(buildInfoPayload()))
+
+app.get('/health', (req, res) => res.json(buildInfoPayload()))
+
+app.get('/api/info', (req, res) => res.json(buildInfoPayload()))
 
 // Routes with specific rate limiters
 app.use('/admin', adminRoutes)

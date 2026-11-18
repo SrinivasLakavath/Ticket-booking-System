@@ -1,7 +1,7 @@
 {
-  "name": "movie-booking-app",
+  "name": "cineseat-api",
   "version": "1.0.0",
-  "description": "",
+  "description": "CineSeat API — Srinivas Lakavath's cinema ticket booking backend (Express + MongoDB)",
   "main": "index.js",
   "scripts": {
     "start": "dotenv -- node index",

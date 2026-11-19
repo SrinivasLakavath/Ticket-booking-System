@@ -10,6 +10,11 @@ export async function uploadImageToFirebase(file, folder = 'images') {
   if (!file) {
     throw new Error('No file selected for upload');
   }
+  if (!storage) {
+    throw new Error(
+      'Firebase Storage is not configured. Paste an image URL instead (Storage needs Blaze on new projects).'
+    );
+  }
 
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const objectPath = `${folder}/${Date.now()}-${uuidv4()}-${safeName}`;

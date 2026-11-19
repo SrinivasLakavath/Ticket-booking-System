@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAnalytics, isSupported } from 'firebase/analytics';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -16,7 +17,6 @@ const requiredKeys = [
   'apiKey',
   'authDomain',
   'projectId',
-  'storageBucket',
   'messagingSenderId',
   'appId',
 ];
@@ -24,17 +24,25 @@ const requiredKeys = [
 const missing = requiredKeys.filter((key) => !firebaseConfig[key]);
 if (missing.length > 0) {
   console.warn(
-    `[CineSeat] Firebase config incomplete. Missing: ${missing.join(', ')}. ` +
+    `[CineSeat] Firebase Auth config incomplete. Missing: ${missing.join(', ')}. ` +
       'Copy Frontend/.env.example to Frontend/.env and fill Firebase values.'
   );
 }
 
 const app = initializeApp(firebaseConfig);
 
-/** Firebase Storage — used for movie banner / poster uploads */
-export const storage = getStorage(app);
+/** Firebase Authentication (Spark / free plan) */
+export const auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-/** Analytics (browser-only; no-op if unsupported) */
+/**
+ * Storage is optional and currently needs Blaze on new Firebase projects.
+ * Only initialize when a bucket is configured; uploads may still fail without Blaze.
+ */
+export const storage = firebaseConfig.storageBucket ? getStorage(app) : null;
+
+/** Analytics (free; browser-only) */
 export let analytics = null;
 if (typeof window !== 'undefined') {
   isSupported()
@@ -44,7 +52,7 @@ if (typeof window !== 'undefined') {
       }
     })
     .catch(() => {
-      /* analytics unavailable (SSR / blocked) */
+      /* analytics unavailable */
     });
 }
 

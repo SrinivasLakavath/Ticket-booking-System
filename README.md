@@ -24,7 +24,7 @@ Most demo booking apps stop at a static seat map. CineSeat focuses on the hard p
 | Frontend | React 18, Vite, Tailwind CSS + DaisyUI, Redux Toolkit, TanStack Query, React Router |
 | Backend | Node.js, Express |
 | Database | MongoDB 7 + Mongoose |
-| Auth | JWT + bcrypt |
+| Auth | Firebase Auth (Spark/free) + JWT + bcrypt / Mongo users |
 | Real-time | Socket.IO |
 | Validation | Zod |
 | Payments | Cashfree (sandbox-ready) |
@@ -159,6 +159,7 @@ Stop with `docker compose down`. Persist data with the named volume declared in 
 | `JWT_SECRET` | Long random secret |
 | `JWT_EXPIRATION` | e.g. `7d` |
 | `CLIENT_URL` / `ALLOWED_ORIGINS` | Frontend origins for CORS + Socket.IO |
+| `FIREBASE_WEB_API_KEY` | Firebase Web API key (Auth token verify, free) |
 | `CASHFREE_CLIENT_ID` / `CASHFREE_CLIENT_SECRET` | Payment sandbox credentials |
 
 ### Frontend (`.env`)

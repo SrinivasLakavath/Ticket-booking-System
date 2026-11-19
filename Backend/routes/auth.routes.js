@@ -5,6 +5,7 @@ const router = express.Router()
 
 router.post('/sign-up', authController.handleSignup)
 router.post('/sign-in', authController.handleSignin)
+router.post('/firebase', authController.handleFirebaseAuth)
 
 router.get('/me', authController.handleMe)
 router.put('/update-profile', authController.handleUpdateProfile)

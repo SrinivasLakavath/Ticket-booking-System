@@ -104,9 +104,35 @@ async function handleUpdateProfile(req, res) {
   }
 }
 
+/**
+ * Exchange a Firebase ID token for a CineSeat JWT + Mongo user.
+ * Works on Firebase Spark (free) — no Blaze / Storage required.
+ */
+async function handleFirebaseAuth(req, res) {
+  const { idToken, firstname, lastname } = req.body || {}
+
+  try {
+    const token = await AuthService.signInWithFirebaseIdToken({
+      idToken,
+      firstname,
+      lastname,
+    })
+    return res.status(200).json({ status: 'success', data: { token } })
+  } catch (err) {
+    if (err instanceof AppError)
+      return res.status(err.code).json({ status: 'error', error: err.message })
+
+    console.log('Firebase auth error', err)
+    return res
+      .status(500)
+      .json({ status: 'error', error: 'Internal Server Error' })
+  }
+}
+
 module.exports = {
   handleSignup,
   handleSignin,
   handleMe,
   handleUpdateProfile,
+  handleFirebaseAuth,
 }

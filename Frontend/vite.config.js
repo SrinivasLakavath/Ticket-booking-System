@@ -18,19 +18,15 @@ export default defineConfig({
       'X-XSS-Protection': '1; mode=block',
     },
   },
+  // Drop console/debugger in production (esbuild is built into Vite — no terser install needed)
+  esbuild: {
+    drop: ['console', 'debugger'],
+  },
   build: {
-    // Security-focused build settings
-    sourcemap: false, // Disable source maps in production
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true, // Remove console.logs in production
-        drop_debugger: true,
-      },
-    },
+    sourcemap: false,
+    minify: 'esbuild',
     rollupOptions: {
       output: {
-        // Obfuscate chunk names
         manualChunks: undefined,
       },
     },

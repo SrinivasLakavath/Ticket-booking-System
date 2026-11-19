@@ -16,8 +16,10 @@ export const SocketProvider = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // Get the backend URL from environment or default
-    const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000';
+    // Same-origin sockets in production; local API in development
+    const SOCKET_URL =
+      import.meta.env.VITE_API_URL?.replace('/api', '') ||
+      (import.meta.env.PROD ? window.location.origin : 'http://localhost:8000');
     
     // Initialize socket connection
     const socketInstance = io(SOCKET_URL, {

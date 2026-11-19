@@ -1,8 +1,10 @@
 import axios from "axios";
 import { tokenStorage } from "../utils/secureStorage";
 
-// Get API URL from environment or default to localhost
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+// Same-origin in production (single Render service). Local dev uses localhost API.
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? "" : "http://localhost:8000");
 
 export const apiInstance = axios.create({
   baseURL: API_BASE_URL,

@@ -4,7 +4,8 @@
   "description": "CineSeat API — Srinivas Lakavath's cinema ticket booking backend (Express + MongoDB)",
   "main": "index.js",
   "scripts": {
-    "start": "dotenv -- node index",
+    "start": "node index",
+    "start:local": "dotenv -- node index",
     "dev": "dotenv -- nodemon index",
     "seed": "node seeds/seed-all.js",
     "seed:reviews": "dotenv -- node seeds/seed-reviews.js",

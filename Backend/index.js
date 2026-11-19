@@ -83,7 +83,8 @@ async function init() {
       })
     })
 
-    server.listen(PORT, () => {
+    // Bind 0.0.0.0 for cloud hosts (Render, Docker, etc.)
+    server.listen(PORT, '0.0.0.0', () => {
       Logger.info(`Server started on port ${PORT}`)
       Logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`)
     })

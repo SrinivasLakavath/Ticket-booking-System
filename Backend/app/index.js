@@ -1,3 +1,5 @@
+const path = require('path')
+const fs = require('fs')
 const express = require('express')
 const cors = require('cors')
 
@@ -22,6 +24,9 @@ const {
 } = require('../config/security.config')
 
 const app = express()
+const clientDistPath = path.join(__dirname, '..', '..', 'Frontend', 'dist')
+const serveClient =
+  process.env.NODE_ENV === 'production' && fs.existsSync(clientDistPath)
 
 // Trust proxy - important for rate limiting and IP detection behind reverse proxies
 app.set('trust proxy', 1)
@@ -69,17 +74,38 @@ function buildInfoPayload() {
   }
 }
 
-app.get('/', (req, res) => res.json(buildInfoPayload()))
-
 app.get('/health', (req, res) => res.json(buildInfoPayload()))
 
 app.get('/api/info', (req, res) => res.json(buildInfoPayload()))
+
+// Keep JSON root only when not serving the built React app
+if (!serveClient) {
+  app.get('/', (req, res) => res.json(buildInfoPayload()))
+}
 
 // Routes with specific rate limiters
 app.use('/admin', adminRoutes)
 app.use('/auth', authLimiter, authRoutes) // Stricter rate limiting for auth
 app.use('/booking', bookingLimiter, bookingRoutes) // Rate limiting for bookings
 app.use('/api', publicRoutes)
+
+// Single-service deploy: Express serves Frontend/dist (Render one Web Service)
+if (serveClient) {
+  app.use(express.static(clientDistPath))
+  app.get('*', (req, res, next) => {
+    if (
+      req.path.startsWith('/api') ||
+      req.path.startsWith('/auth') ||
+      req.path.startsWith('/booking') ||
+      req.path.startsWith('/admin') ||
+      req.path.startsWith('/health') ||
+      req.path.startsWith('/socket.io')
+    ) {
+      return next()
+    }
+    return res.sendFile(path.join(clientDistPath, 'index.html'))
+  })
+}
 
 // 404 handler
 app.use(notFoundHandler)

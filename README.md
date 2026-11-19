@@ -155,7 +155,7 @@ Stop with `docker compose down`. Persist data with the named volume declared in 
 | --- | --- |
 | `PORT` | API port (default `8000`) |
 | `NODE_ENV` | `development` / `production` |
-| `MONGODB_URI` | e.g. `mongodb://localhost:27017/cineseat` |
+| `MONGODB_URI` | Local or Atlas URI (aliases: `MONGO_URI_ATLAS`, `MONGO_URI`) |
 | `JWT_SECRET` | Long random secret |
 | `JWT_EXPIRATION` | e.g. `7d` |
 | `CLIENT_URL` / `ALLOWED_ORIGINS` | Frontend origins for CORS + Socket.IO |

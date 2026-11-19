@@ -13,8 +13,19 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 
 async function init() {
   try {
-    await connectMongoDB(process.env.MONGODB_URI)
-    Logger.info('MongoDB Connected')
+    const mongoUri =
+      process.env.MONGODB_URI ||
+      process.env.MONGO_URI_ATLAS ||
+      process.env.MONGO_URI
+
+    if (!mongoUri) {
+      throw new Error(
+        'MongoDB URI missing. Set MONGODB_URI (or MONGO_URI_ATLAS) in Backend/.env'
+      )
+    }
+
+    await connectMongoDB(mongoUri)
+    Logger.info('MongoDB Connected (Atlas/local)')
 
     const server = http.createServer(expressApplication)
     

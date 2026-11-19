@@ -27,6 +27,7 @@ const CreateMovieForm = () => {
   const [language, setLanguage] = useState('');
   const [durationInMinutes, setDurationInMinutes] = useState('');
   const [imageUpload, setImageUpload] = useState(null);
+  const [imageURL, setImageURL] = useState('');
   const [genre, setGenre] = useState([]);
   const [categories, setCategories] = useState([]);
   const [adultRating, setAdultRating] = useState('U');
@@ -46,9 +47,17 @@ const CreateMovieForm = () => {
 
   const { mutateAsync: createMovieAsync } = useCreateMovie();
 
-  const uploadFile = async () => {
+  // Prefer pasted URL (Mongo stores the string). Firebase Storage is optional.
+  const resolveImageUrl = async () => {
+    if (imageURL?.trim()) return imageURL.trim();
     if (!imageUpload) return undefined;
-    return uploadImageToFirebase(imageUpload, 'movies/banners');
+    try {
+      return await uploadImageToFirebase(imageUpload, 'movies/banners');
+    } catch (err) {
+      throw new Error(
+        'Image upload failed (Firebase Storage not set up). Paste an image URL instead, or enable Storage later.'
+      );
+    }
   };
 
   const handleAddGenre = (selectedGenre) => {
@@ -78,7 +87,7 @@ const CreateMovieForm = () => {
     setFormSuccess('');
     setUploading(true);
     try {
-      const url = await uploadFile();
+      const url = await resolveImageUrl();
       const movieData = {
         title,
         description,
@@ -99,21 +108,17 @@ const CreateMovieForm = () => {
       setDescription('');
       setLanguage('');
       setImageUpload(null);
+      setImageURL('');
       setDurationInMinutes('');
       setGenre([]);
       setCategories([]);
       setAdultRating('U');
       setFormSuccess(
-        url
-          ? 'Movie created. Banner uploaded to Firebase Storage.'
-          : 'Movie created (no banner uploaded).'
+        url ? 'Movie created and saved to MongoDB.' : 'Movie created (no banner).'
       );
     } catch (error) {
       console.error(error);
-      setFormError(
-        error?.message ||
-          'Failed to create movie. Check Firebase Storage is enabled and rules allow uploads.'
-      );
+      setFormError(error?.message || 'Failed to create movie.');
     } finally {
       setUploading(false);
     }
@@ -212,7 +217,14 @@ const CreateMovieForm = () => {
           <option value="S">S - Restricted</option>
         </select>
 
-        {/* Banner image — uploaded to Firebase Storage */}
+        {/* Banner: paste URL (recommended) or optional Firebase file upload */}
+        <input
+          type="url"
+          className="grow input input-bordered"
+          placeholder="IMAGE URL (poster / banner)"
+          value={imageURL}
+          onChange={(e) => setImageURL(e.target.value)}
+        />
         <input
           type="file"
           accept="image/*"
@@ -220,7 +232,7 @@ const CreateMovieForm = () => {
           onChange={handleImageUpload}
         />
         {imageUpload && (
-          <p className="text-sm opacity-70">Selected: {imageUpload.name}</p>
+          <p className="text-sm opacity-70">Selected file: {imageUpload.name} (optional Firebase upload)</p>
         )}
         {/* duration in minutes */}
           <input type="text" className="grow input input-bordered" placeholder="DURATION IN MINUTES" value={durationInMinutes} onChange={handleDurationInMinutes} />

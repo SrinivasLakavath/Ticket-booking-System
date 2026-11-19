@@ -35,7 +35,7 @@ const BookSeatPage = () => {
   const isInitialLoad = useRef(true);
   
   useEffect(() => {
-    if (movie._id === null) {
+    if (!hall.showId) {
       navigate("/explore");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

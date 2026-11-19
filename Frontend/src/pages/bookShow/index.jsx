@@ -1,10 +1,18 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { apiInstance } from '../../api';
 import { useEffect, useState } from 'react';
 import { setShowDetails} from '../../store/slices/hallSlice';
+import { fetchMovie } from '../../store/slices/movieSlice';
 import { useGetTheatreReviews, useCreateTheatreReview } from '../../hooks/review.hooks';
 
+
+const toLocalDateString = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 const filterData = (shows, selectedDate) => {
   console.log('shows', shows);
@@ -40,12 +48,13 @@ const filterData = (shows, selectedDate) => {
 const BookShowPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { movieId: movieIdParam, location: locationParam } = useParams();
   const movie = useSelector((state) => state.movie);
   const location = useSelector((state) => state.location)
   const [isLoading, setIsLoading] = useState(false);
 
   const [theaterDatas, setTheaterDatas] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
+  const [selectedDate, setSelectedDate] = useState(() => toLocalDateString());
   const [selectedTheatreId, setSelectedTheatreId] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewForm, setReviewForm] = useState({
@@ -60,39 +69,48 @@ const BookShowPage = () => {
     }
   });
 
+  const cityName = locationParam || location.location || 'Nagpur';
+  const resolvedMovieId = movieIdParam || movie._id;
+
   const { data: theatreReviews } = useGetTheatreReviews(selectedTheatreId);
   const createTheatreReview = useCreateTheatreReview();
+
+  useEffect(() => {
+    if (resolvedMovieId && movie._id !== resolvedMovieId) {
+      dispatch(fetchMovie(resolvedMovieId));
+    }
+  }, [resolvedMovieId, movie._id, dispatch]);
 
   useEffect(() => {
     setIsLoading(true);
     const fetchShows = async () => {
       try {
-        console.log('movie', movie._id);
-        if (movie._id === null) {
+        if (!resolvedMovieId) {
           setIsLoading(false);
           navigate('/explore');
           return;
         }
-        const { data } = await apiInstance.get(`/api/${location.location}/shows/${movie._id}`);
+        const { data } = await apiInstance.get(`/api/${cityName}/shows/${resolvedMovieId}`);
         // Process data using filterData
-        const processedData = filterData(data.data, selectedDate);
+        const processedData = filterData(data.data || [], selectedDate);
 
         // Convert the object to an array for mapping in JSX
         const theaterDataArray = Object.values(processedData); // Get an array of theater objects
         setTheaterDatas(theaterDataArray); // Set the state with the array
 
         setIsLoading(false);
-        console.log('isLoading', isLoading);
       } catch (error) {
         console.log('error', error);
+        setTheaterDatas([]);
+        setIsLoading(false);
       }
     };
     fetchShows();
-  }, [selectedDate, location]);
+  }, [selectedDate, cityName, resolvedMovieId, navigate]);
   
   const today = new Date();
-  const minDate = today.toISOString().slice(0, 10);
-  const maxDate = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const minDate = toLocalDateString(today);
+  const maxDate = toLocalDateString(new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000));
 
   console.log('theaterDatas', theaterDatas);
   console.log('theaterDatas type',typeof theaterDatas);

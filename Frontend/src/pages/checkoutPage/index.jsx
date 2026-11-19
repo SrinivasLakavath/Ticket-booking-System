@@ -31,14 +31,9 @@ initializeSDK();
       return;
     }
 
-    if (booking.selectedSeats.length === 0) {
+    if (booking.selectedSeats.length === 0 || !hall.showId) {
       navigate('/explore');
-    }
-    if (movie._id === null) {
-      navigate('/explore');
-    }
-    if (hall.showId === null) {
-      navigate('/explore');
+      return;
     }
 
     setConvenienceFees(30);

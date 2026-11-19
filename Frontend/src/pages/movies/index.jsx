@@ -1,18 +1,24 @@
 import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
+import { useGetMovieById } from "../../hooks/movie.hooks";
 import { useGetMovieCast, useGetMovieCrew } from "../../hooks/movie-role.hooks";
 import { useGetCriticReviews, useGetMovieReviews, useCreateMovieReview } from "../../hooks/review.hooks";
+import { fetchMovie } from "../../store/slices/movieSlice";
 
 const MoviesPage = () => {
-  const movie = useSelector((state) => state.movie);
+  const reduxMovie = useSelector((state) => state.movie);
   const location = useSelector((state) => state.location);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const { id } = useParams();
   const [userRating, setUserRating] = useState(0);
   const [userReview, setUserReview] = useState("");
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [activeTab, setActiveTab] = useState("cast");
+
+  const { data: fetchedMovie, isLoading: movieLoading, isError } = useGetMovieById(id);
+  const movie = fetchedMovie || (reduxMovie?._id === id ? reduxMovie : null);
   
   const { data: cast, isLoading: castLoading } = useGetMovieCast(id);
   const { data: crew, isLoading: crewLoading } = useGetMovieCrew(id);
@@ -21,14 +27,34 @@ const MoviesPage = () => {
   const createReview = useCreateMovieReview();
 
   useEffect(() => {
-    if (movie._id === null) {
-      navigate("/explore");
+    if (id) {
+      dispatch(fetchMovie(id));
     }
-  }, []);
+  }, [id, dispatch]);
 
   const handleNavigation = () => {
     const cityName = location.location || "Nagpur";
-    navigate(`/${cityName}/movies/${movie._id}/bookShow`);
+    const movieId = movie?._id || id;
+    navigate(`/${cityName}/movies/${movieId}/bookShow`);
+  }
+
+  if (movieLoading && !movie) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <span className="loading loading-spinner loading-lg text-primary"></span>
+      </div>
+    );
+  }
+
+  if (isError || !movie) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <p className="text-xl">Movie not found</p>
+        <button className="btn btn-primary" onClick={() => navigate('/explore')}>
+          Back to Explore
+        </button>
+      </div>
+    );
   }
 
   const handleSubmitReview = async (e) => {

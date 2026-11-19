@@ -32,10 +32,21 @@ export const useGetAllMovies = () => {
     queryKey: ["movies"],
     queryFn: async () => {
       const { data } = await apiInstance.get("/api/movies");
-      return data.data;
+      return Array.isArray(data?.data) ? data.data : [];
     },
   });
   return movies;
+};
+
+export const useGetMovieById = (movieId) => {
+  return useQuery({
+    queryKey: ["movie", movieId],
+    enabled: Boolean(movieId),
+    queryFn: async () => {
+      const { data } = await apiInstance.get(`/api/movies/${movieId}`);
+      return data?.data || null;
+    },
+  });
 };
 
 export const useGetLatest10Movies = () => {
@@ -44,7 +55,6 @@ export const useGetLatest10Movies = () => {
     queryFn: async () => {
       const { data } = await apiInstance.get("/api/movies");
       const list = Array.isArray(data?.data) ? data.data : [];
-      // Newest first when timestamps exist; otherwise keep API order
       return [...list]
         .sort((a, b) => {
           const aTime = new Date(a.createdAt || a.updatedAt || 0).getTime();

@@ -1,12 +1,6 @@
 import { useState } from 'react';
 import { useCreateMovie, useGetAllMovies } from '../../../../hooks/movie.hooks';
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-} from 'firebase/storage';
-import { storage } from '../../../../util/storageService/firebase';
-import { v4 } from 'uuid';
+import { uploadImageToFirebase } from '../../../../util/storageService/uploadImage';
 
 const CreateMovieTab = () => {
   const { data: movies } = useGetAllMovies();
@@ -36,6 +30,9 @@ const CreateMovieForm = () => {
   const [genre, setGenre] = useState([]);
   const [categories, setCategories] = useState([]);
   const [adultRating, setAdultRating] = useState('U');
+  const [uploading, setUploading] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [formSuccess, setFormSuccess] = useState('');
 
   const availableGenres = [
     'Action', 'Adventure', 'Animation', 'Biography', 'Comedy', 'Crime',
@@ -50,12 +47,8 @@ const CreateMovieForm = () => {
   const { mutateAsync: createMovieAsync } = useCreateMovie();
 
   const uploadFile = async () => {
-    if (imageUpload == null || imageUpload == '') return;
-    let urlImg = '';
-    const imageRef = ref(storage, `images/${imageUpload.name + v4()}`);
-    await uploadBytes(imageRef, imageUpload);
-    urlImg = await getDownloadURL(imageRef);
-    return urlImg;
+    if (!imageUpload) return undefined;
+    return uploadImageToFirebase(imageUpload, 'movies/banners');
   };
 
   const handleAddGenre = (selectedGenre) => {
@@ -81,6 +74,9 @@ const CreateMovieForm = () => {
 
   const handleCreateMovie = async (e) => {
     e.preventDefault();
+    setFormError('');
+    setFormSuccess('');
+    setUploading(true);
     try {
       const url = await uploadFile();
       const movieData = {
@@ -93,7 +89,6 @@ const CreateMovieForm = () => {
         categories: categories.length > 0 ? categories : undefined,
         adultRating,
       };
-      console.log('movieData', movieData);
       const filteredMovieData = Object.fromEntries(
         // eslint-disable-next-line no-unused-vars
         Object.entries(movieData).filter(([_, value]) => value)
@@ -108,8 +103,19 @@ const CreateMovieForm = () => {
       setGenre([]);
       setCategories([]);
       setAdultRating('U');
+      setFormSuccess(
+        url
+          ? 'Movie created. Banner uploaded to Firebase Storage.'
+          : 'Movie created (no banner uploaded).'
+      );
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      setFormError(
+        error?.message ||
+          'Failed to create movie. Check Firebase Storage is enabled and rules allow uploads.'
+      );
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -206,12 +212,28 @@ const CreateMovieForm = () => {
           <option value="S">S - Restricted</option>
         </select>
 
-        {/* image URL */}
-        <input type="file" className="file-input file-input-bordered w-full grow" placeholder='ADD MOVIE BANER' onChange={handleImageUpload}/>
+        {/* Banner image — uploaded to Firebase Storage */}
+        <input
+          type="file"
+          accept="image/*"
+          className="file-input file-input-bordered w-full grow"
+          onChange={handleImageUpload}
+        />
+        {imageUpload && (
+          <p className="text-sm opacity-70">Selected: {imageUpload.name}</p>
+        )}
         {/* duration in minutes */}
           <input type="text" className="grow input input-bordered" placeholder="DURATION IN MINUTES" value={durationInMinutes} onChange={handleDurationInMinutes} />
+        {formError && <p className="text-error text-sm">{formError}</p>}
+        {formSuccess && <p className="text-success text-sm">{formSuccess}</p>}
         {/* submit Button */}
-          <button className="btn btn-outline btn-primary" onClick={handleCreateMovie}>CREATE MOVIE</button>
+          <button
+            className="btn btn-outline btn-primary"
+            onClick={handleCreateMovie}
+            disabled={uploading}
+          >
+            {uploading ? 'UPLOADING…' : 'CREATE MOVIE'}
+          </button>
       </div>
     </div>
   );

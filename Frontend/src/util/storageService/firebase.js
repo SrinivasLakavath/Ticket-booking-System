@@ -1,9 +1,7 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getStorage } from "firebase/storage";
+import { initializeApp } from 'firebase/app';
+import { getAnalytics, isSupported } from 'firebase/analytics';
+import { getStorage } from 'firebase/storage';
 
-
-// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_REACT_APP_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_REACT_APP_FIREBASE_AUTH_DOMAIN,
@@ -11,8 +9,43 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_REACT_APP_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_REACT_APP_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_REACT_APP_FIREBASE_MEASUREMENT_ID,
 };
 
-// Initialize Firebase
+const requiredKeys = [
+  'apiKey',
+  'authDomain',
+  'projectId',
+  'storageBucket',
+  'messagingSenderId',
+  'appId',
+];
+
+const missing = requiredKeys.filter((key) => !firebaseConfig[key]);
+if (missing.length > 0) {
+  console.warn(
+    `[CineSeat] Firebase config incomplete. Missing: ${missing.join(', ')}. ` +
+      'Copy Frontend/.env.example to Frontend/.env and fill Firebase values.'
+  );
+}
+
 const app = initializeApp(firebaseConfig);
+
+/** Firebase Storage — used for movie banner / poster uploads */
 export const storage = getStorage(app);
+
+/** Analytics (browser-only; no-op if unsupported) */
+export let analytics = null;
+if (typeof window !== 'undefined') {
+  isSupported()
+    .then((ok) => {
+      if (ok && firebaseConfig.measurementId) {
+        analytics = getAnalytics(app);
+      }
+    })
+    .catch(() => {
+      /* analytics unavailable (SSR / blocked) */
+    });
+}
+
+export default app;

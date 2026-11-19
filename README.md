@@ -166,7 +166,8 @@ Stop with `docker compose down`. Persist data with the named volume declared in 
 | Variable | Purpose |
 | --- | --- |
 | `VITE_API_URL` | Backend base URL |
-| `VITE_REACT_APP_FIREBASE_*` | Optional Firebase storage/auth keys |
+| `VITE_REACT_APP_FIREBASE_*` | Firebase Storage (movie banners) + Analytics |
+| `VITE_REACT_APP_FIREBASE_MEASUREMENT_ID` | Optional Google Analytics measurement ID |
 
 Never commit real secrets. Use the `.env.example` files as templates.
 

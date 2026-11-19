@@ -40,10 +40,18 @@ export const useGetAllMovies = () => {
 
 export const useGetLatest10Movies = () => {
   const movies = useQuery({
-    queryKey: ["movies"],
-    queryFn: async ({sort}) => {
-      const { data } = await apiInstance.get("/api/movies", {sort});
-      return data.data;
+    queryKey: ["movies", "latest"],
+    queryFn: async () => {
+      const { data } = await apiInstance.get("/api/movies");
+      const list = Array.isArray(data?.data) ? data.data : [];
+      // Newest first when timestamps exist; otherwise keep API order
+      return [...list]
+        .sort((a, b) => {
+          const aTime = new Date(a.createdAt || a.updatedAt || 0).getTime();
+          const bTime = new Date(b.createdAt || b.updatedAt || 0).getTime();
+          return bTime - aTime;
+        })
+        .slice(0, 10);
     },
   });
   return movies;

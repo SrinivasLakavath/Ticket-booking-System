@@ -7,6 +7,7 @@ const adminRoutes = require('../routes/admin.routes')
 const bookingRoutes = require('../routes/booking.routes')
 const authRoutes = require('../routes/auth.routes')
 const publicRoutes = require('../routes/public.routes')
+const seedRoutes = require('../routes/seed.routes')
 
 const { authenticationMiddleware } = require('../middlewares/auth.middleware.js')
 const { errorHandler, notFoundHandler } = require('../middlewares/error.middleware')
@@ -31,9 +32,27 @@ const serveClient =
 // Trust proxy - important for rate limiting and IP detection behind reverse proxies
 app.set('trust proxy', 1)
 
+// Serve built assets FIRST (before body parsers / auth / compression issues)
+if (serveClient) {
+  app.use(
+    '/assets',
+    express.static(path.join(clientDistPath, 'assets'), {
+      fallthrough: false,
+      maxAge: '1y',
+      immutable: true,
+    })
+  )
+  app.use(
+    express.static(clientDistPath, {
+      index: false,
+      maxAge: '1h',
+    })
+  )
+}
+
 // Security Middleware
 app.use(helmetConfig) // Security headers
-app.use(compressionConfig) // Compress responses
+app.use(compressionConfig) // Compress API JSON responses (assets skipped)
 app.use(mongoSanitizeConfig) // Prevent NoSQL injection
 app.use(xssConfig) // Prevent XSS attacks
 app.use(hppConfig) // Prevent HTTP parameter pollution
@@ -88,10 +107,10 @@ app.use('/admin', adminRoutes)
 app.use('/auth', authLimiter, authRoutes) // Stricter rate limiting for auth
 app.use('/booking', bookingLimiter, bookingRoutes) // Rate limiting for bookings
 app.use('/api', publicRoutes)
+app.use('/api', seedRoutes)
 
-// Single-service deploy: Express serves Frontend/dist (Render one Web Service)
+// SPA fallback — never rewrite real file extensions to index.html
 if (serveClient) {
-  app.use(express.static(clientDistPath))
   app.get('*', (req, res, next) => {
     if (
       req.path.startsWith('/api') ||
@@ -99,7 +118,8 @@ if (serveClient) {
       req.path.startsWith('/booking') ||
       req.path.startsWith('/admin') ||
       req.path.startsWith('/health') ||
-      req.path.startsWith('/socket.io')
+      req.path.startsWith('/socket.io') ||
+      path.extname(req.path)
     ) {
       return next()
     }

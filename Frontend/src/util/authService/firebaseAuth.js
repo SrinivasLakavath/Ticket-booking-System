@@ -8,6 +8,15 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from '../storageService/firebase';
 
+function ensureAuth() {
+  if (!auth) {
+    throw new Error(
+      'Firebase Auth is not configured. Check VITE_REACT_APP_FIREBASE_* env vars.'
+    );
+  }
+  return auth;
+}
+
 function splitDisplayName(displayName = '') {
   const parts = displayName.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return { firstname: 'CineSeat', lastname: 'User' };
@@ -32,7 +41,12 @@ async function toAuthPayload(user, fallbackNames = {}) {
 
 /** Email/password signup on Firebase Auth (free) */
 export async function firebaseSignUp({ email, password, firstname, lastname }) {
-  const cred = await createUserWithEmailAndPassword(auth, email, password);
+  const firebaseAuth = ensureAuth();
+  const cred = await createUserWithEmailAndPassword(
+    firebaseAuth,
+    email,
+    password
+  );
   const displayName = [firstname, lastname].filter(Boolean).join(' ').trim();
   if (displayName) {
     await updateProfile(cred.user, { displayName });
@@ -42,23 +56,23 @@ export async function firebaseSignUp({ email, password, firstname, lastname }) {
 
 /** Email/password sign-in on Firebase Auth (free) */
 export async function firebaseSignIn({ email, password }) {
-  const cred = await signInWithEmailAndPassword(auth, email, password);
+  const cred = await signInWithEmailAndPassword(ensureAuth(), email, password);
   return toAuthPayload(cred.user);
 }
 
 /** Google popup sign-in (free; enable Google provider in Firebase Console) */
 export async function firebaseGoogleSignIn() {
-  const cred = await signInWithPopup(auth, googleProvider);
+  const cred = await signInWithPopup(ensureAuth(), googleProvider);
   return toAuthPayload(cred.user);
 }
 
 /** Password reset email (free) */
 export async function firebaseResetPassword(email) {
-  await sendPasswordResetEmail(auth, email);
+  await sendPasswordResetEmail(ensureAuth(), email);
 }
 
 export async function firebaseSignOut() {
-  await signOut(auth);
+  await signOut(ensureAuth());
 }
 
 export function mapFirebaseAuthError(error) {

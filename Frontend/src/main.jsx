@@ -5,8 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import {Provider} from 'react-redux';
 
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-
 import {store} from './store/store.js';
 import { SocketProvider } from './contexts/SocketContext.jsx';
 import App from "./App.jsx";
@@ -25,15 +23,14 @@ if (!storedTheme || storedTheme === 'luxury' || storedTheme === 'dark') {
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    
-    <BrowserRouter><Provider store={store}>
-      <QueryClientProvider client={queryClient}>
-        <SocketProvider>
-          <App />
-          <ReactQueryDevtools />
-        </SocketProvider>
-      </QueryClientProvider></Provider>
+    <BrowserRouter>
+      <Provider store={store}>
+        <QueryClientProvider client={queryClient}>
+          <SocketProvider>
+            <App />
+          </SocketProvider>
+        </QueryClientProvider>
+      </Provider>
     </BrowserRouter>
-    
   </StrictMode>
 );

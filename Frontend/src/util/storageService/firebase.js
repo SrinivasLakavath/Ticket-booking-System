@@ -29,10 +29,15 @@ if (missing.length > 0) {
   );
 }
 
-const app = initializeApp(firebaseConfig);
+let app = null;
+try {
+  app = initializeApp(firebaseConfig);
+} catch (err) {
+  console.error('[CineSeat] Firebase failed to initialize:', err);
+}
 
 /** Firebase Authentication (Spark / free plan) */
-export const auth = getAuth(app);
+export const auth = app ? getAuth(app) : null;
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
@@ -40,11 +45,12 @@ googleProvider.setCustomParameters({ prompt: 'select_account' });
  * Storage is optional and currently needs Blaze on new Firebase projects.
  * Only initialize when a bucket is configured; uploads may still fail without Blaze.
  */
-export const storage = firebaseConfig.storageBucket ? getStorage(app) : null;
+export const storage =
+  app && firebaseConfig.storageBucket ? getStorage(app) : null;
 
 /** Analytics (free; browser-only) */
 export let analytics = null;
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && app) {
   isSupported()
     .then((ok) => {
       if (ok && firebaseConfig.measurementId) {

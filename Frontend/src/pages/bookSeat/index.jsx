@@ -76,8 +76,7 @@ const BookSeatPage = () => {
         console.error("Error fetching seat status:", error);
         // Handle network errors gracefully
         if (error.response?.status === 401) {
-          alert('Session expired. Please login again.');
-          navigate('/sign-in');
+          // Seat map can still be shown without auth; ignore
         }
       } finally {
         setIsLoading(false);
@@ -117,10 +116,14 @@ const BookSeatPage = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Lock seats when selection changes
+  // Lock seats when selection changes (requires auth)
   useEffect(() => {
     const lockSeats = async () => {
       if (selectedSeats.length > 0 && hall.showId) {
+        if (!user) {
+          // Keep selection visible, but require sign-in before locking
+          return;
+        }
         try {
           await lockSeatsAsync({ showId: hall.showId, seatNumbers: selectedSeats });
           // Reset visible hold countdown to match server lock TTL
@@ -137,8 +140,10 @@ const BookSeatPage = () => {
               setSelectedSeats(prev => prev.filter(s => !error.response.data.bookedSeats.includes(s)));
             }
           } else if (error.response?.status === 401) {
-            alert('Session expired. Please login again.');
-            navigate('/sign-in');
+            alert('Please sign in to hold seats.');
+            navigate('/sign-in', {
+              state: { returnUrl: `/bookShow/${hall.showId}/bookseat` },
+            });
           } else {
             // Network error or other issue
             alert('Unable to lock seats. Please check your connection and try again.');
@@ -146,7 +151,7 @@ const BookSeatPage = () => {
             setHoldSecondsLeft(null);
           }
         }
-      } else if (selectedSeats.length === 0 && hall.showId && !isInitialLoad.current) {
+      } else if (selectedSeats.length === 0 && hall.showId && !isInitialLoad.current && user) {
         // Unlock seats when selection is cleared
         try {
           await unlockSeatsAsync({ showId: hall.showId });
@@ -160,7 +165,7 @@ const BookSeatPage = () => {
 
     lockSeats();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSeats, hall.showId]);
+  }, [selectedSeats, hall.showId, user]);
 
   // Cleanup locks on page leave
   useEffect(() => {
@@ -173,6 +178,13 @@ const BookSeatPage = () => {
   
  
   const handlePayment = async () => {
+    if (!user) {
+      alert('Please sign in to continue to checkout.');
+      navigate('/sign-in', {
+        state: { returnUrl: `/bookShow/${hall.showId}/bookseat` },
+      });
+      return;
+    }
     // Clear the auto-unlock timer since user is proceeding to checkout
     if (lockTimer) {
       clearTimeout(lockTimer);

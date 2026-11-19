@@ -82,30 +82,38 @@ const BookShowPage = () => {
   }, [resolvedMovieId, movie._id, dispatch]);
 
   useEffect(() => {
+    let cancelled = false;
     setIsLoading(true);
     const fetchShows = async () => {
       try {
         if (!resolvedMovieId) {
-          setIsLoading(false);
-          navigate('/explore');
+          if (!cancelled) {
+            setIsLoading(false);
+            navigate('/explore');
+          }
           return;
         }
         const { data } = await apiInstance.get(`/api/${cityName}/shows/${resolvedMovieId}`);
+        if (cancelled) return;
         // Process data using filterData
         const processedData = filterData(data.data || [], selectedDate);
 
         // Convert the object to an array for mapping in JSX
         const theaterDataArray = Object.values(processedData); // Get an array of theater objects
         setTheaterDatas(theaterDataArray); // Set the state with the array
-
         setIsLoading(false);
       } catch (error) {
         console.log('error', error);
-        setTheaterDatas([]);
-        setIsLoading(false);
+        if (!cancelled) {
+          setTheaterDatas([]);
+          setIsLoading(false);
+        }
       }
     };
     fetchShows();
+    return () => {
+      cancelled = true;
+    };
   }, [selectedDate, cityName, resolvedMovieId, navigate]);
   
   const today = new Date();

@@ -42,13 +42,10 @@ apiInstance.interceptors.response.use(
       
       switch (status) {
         case 401:
-          // Unauthorized - clear auth and redirect to login
+          // Clear stale token only. Let pages decide whether to redirect
+          // so booking Redux state is not wiped by a hard navigation.
           console.warn('Unauthorized access - clearing auth data');
           tokenStorage.remove();
-          // Optionally redirect to login
-          if (window.location.pathname !== '/sign-in') {
-            window.location.href = '/sign-in';
-          }
           break;
         
         case 403:

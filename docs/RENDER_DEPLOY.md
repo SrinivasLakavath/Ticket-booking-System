@@ -17,6 +17,8 @@ Do **not** use Docker on Render Free for this project.
 | Root Directory | *(leave empty — repo root)* |
 | Build Command | `npm run build` |
 | Start Command | `npm start` |
+
+If the build says `vite: not found`, Render is skipping Frontend devDependencies. The root `npm run build` already uses `--include=dev` for Frontend — redeploy latest `main`.
 | Plan | **Free** |
 
 4. Environment variables:

@@ -3,7 +3,7 @@
   "private": true,
   "description": "CineSeat — single-service build for Render (Frontend + Backend)",
   "scripts": {
-    "build": "npm install --prefix Frontend && npm run build --prefix Frontend && npm install --prefix Backend",
+    "build": "npm install --prefix Frontend --include=dev && npm run build --prefix Frontend && npm install --prefix Backend --omit=dev",
     "start": "npm start --prefix Backend",
     "dev:api": "npm run dev --prefix Backend",
     "dev:web": "npm run dev --prefix Frontend"
